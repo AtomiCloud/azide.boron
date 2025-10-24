@@ -1,0 +1,56 @@
+---
+import { getConfig } from '../lib/config';
+
+export interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  article?: boolean;
+  noindex?: boolean;
+}
+
+const config = getConfig();
+
+const {
+  title,
+  description = config.seo.defaultDescription,
+  image = '/og-image.png',  // Use generated OG image by default
+  article = false,
+  noindex = false,
+} = Astro.props;
+
+const pageTitle = title
+  ? config.seo.titleTemplate.replace('%s', title)
+  : config.seo.defaultTitle;
+
+const canonicalURL = new URL(Astro.url.pathname, config.site.url);
+const imageURL = new URL(image, config.site.url);
+---
+
+<!-- Primary Meta Tags -->
+<title>{pageTitle}</title>
+<meta name="title" content={pageTitle} />
+<meta name="description" content={description} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
+<link rel="canonical" href={canonicalURL} />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content={article ? 'article' : config.seo.type} />
+<meta property="og:url" content={canonicalURL} />
+<meta property="og:title" content={pageTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={imageURL} />
+<meta property="og:site_name" content={config.seo.siteName} />
+<meta property="og:locale" content={config.seo.locale} />
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image" />
+<meta property="twitter:url" content={canonicalURL} />
+<meta property="twitter:title" content={pageTitle} />
+<meta property="twitter:description" content={description} />
+<meta property="twitter:image" content={imageURL} />
+{config.social.twitter && <meta name="twitter:site" content={config.social.twitter} />}
+{config.social.twitter && <meta name="twitter:creator" content={config.social.twitter} />}
+
+<!-- Additional SEO -->
+<meta name="author" content={config.site.author} />

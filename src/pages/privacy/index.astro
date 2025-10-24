@@ -1,0 +1,12 @@
+---
+import LegalDocumentLayout from '../../layouts/LegalDocumentLayout.astro';
+import { getPrivacyPolicy } from '../../lib/legal-documents';
+import { getConfig } from '../../lib/config';
+
+const config = getConfig();
+const privacyPolicy = getPrivacyPolicy(config);
+
+// Show the latest version (no version parameter = latest)
+---
+
+<LegalDocumentLayout document={privacyPolicy} />

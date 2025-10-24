@@ -1,0 +1,105 @@
+---
+import Layout from './Layout.astro';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { PWAInstallButton } from '../components/PWAInstallButton';
+import { LegalContent } from '../components/LegalContent';
+import type { LegalDocument } from '../lib/legal-documents';
+import { getConfig } from '../lib/config';
+
+interface Props {
+  document: LegalDocument;
+  version?: string;
+}
+
+const { document, version } = Astro.props;
+const config = getConfig();
+
+// Get the version to display (current or specific)
+const displayVersion = version
+  ? document.versions.find((v) => v.version === version)
+  : document.versions[document.versions.length - 1];
+
+if (!displayVersion) {
+  return Astro.redirect('/404');
+}
+
+const formattedDate = displayVersion.effectiveDate.toLocaleDateString('en-US', {
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+});
+---
+
+<Layout title={document.title} description={document.description}>
+  <div class="min-h-screen bg-background">
+    <!-- Sticky Top Bar -->
+    <header
+      class="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border"
+    >
+      <div class="container mx-auto px-6 max-w-4xl">
+        <div class="flex justify-between items-center py-4">
+          <!-- Logo -->
+          <a href="/" class="flex items-center gap-3">
+            <img src="/logo.svg" alt={config.app.name} class="h-8 w-8" />
+            <span class="font-bold text-lg text-foreground">{config.app.shortName}</span>
+          </a>
+
+          <!-- Theme Toggle and PWA Install -->
+          <div class="flex items-center gap-3">
+            <PWAInstallButton client:load />
+            <ThemeToggle client:load />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-16 max-w-4xl">
+      <!-- Header -->
+      <div class="mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 text-foreground">
+          {document.title}
+        </h1>
+        <div class="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+          <span class="px-3 py-1 bg-primary/10 text-primary rounded-full font-medium">
+            {displayVersion.version}
+          </span>
+          <span>•</span>
+          <time datetime={displayVersion.effectiveDate.toISOString()}>
+            Effective {formattedDate}
+          </time>
+        </div>
+        {
+          displayVersion.changes && (
+            <div class="mt-6 p-4 bg-amber-500/10 border-l-4 border-amber-500 rounded-r">
+              <p class="text-sm font-medium text-amber-900 dark:text-amber-100">
+                Changes: {displayVersion.changes}
+              </p>
+            </div>
+          )
+        }
+      </div>
+
+      <!-- Document Content -->
+      <div class="prose prose-slate dark:prose-invert max-w-none">
+        {
+          displayVersion.content.sections.map((section) => (
+            <section class="mb-12">
+              <h2 class="text-2xl font-bold mb-6 text-foreground">{section.title}</h2>
+              <div class="text-foreground/90">
+                <LegalContent content={section.content} client:load />
+              </div>
+            </section>
+          ))
+        }
+      </div>
+
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .prose h2 {
+    scroll-margin-top: 100px;
+  }
+</style>

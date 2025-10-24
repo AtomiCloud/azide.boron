@@ -1,0 +1,144 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getAllLegalDocuments } from '../lib/legal-documents';
+import { getConfig } from '../lib/config';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { PWAInstallButton } from '../components/PWAInstallButton';
+
+const config = getConfig();
+const documents = getAllLegalDocuments(config);
+---
+
+<Layout
+  title="Legal Documents"
+  description="Privacy Policy, Terms of Service, and other legal documents with version history"
+>
+  <div class="min-h-screen bg-background">
+    <!-- Sticky Top Bar -->
+    <header
+      class="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border"
+    >
+      <div class="container mx-auto px-6 max-w-5xl">
+        <div class="flex justify-between items-center py-4">
+          <!-- Logo -->
+          <a href="/" class="flex items-center gap-3">
+            <img src="/logo.svg" alt={config.app.name} class="h-8 w-8" />
+            <span class="font-bold text-lg text-foreground">{config.app.shortName}</span>
+          </a>
+
+          <!-- Theme Toggle and PWA Install -->
+          <div class="flex items-center gap-3">
+            <PWAInstallButton client:load />
+            <ThemeToggle client:load />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-16 max-w-5xl">
+      <!-- Header -->
+      <div class="mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 text-foreground">
+          Legal Documents
+        </h1>
+        <p class="text-lg text-muted-foreground max-w-2xl">
+          Our commitment to transparency. View current policies and access historical versions with detailed change logs.
+        </p>
+      </div>
+
+      <!-- Documents List -->
+      <div class="space-y-16">
+        {documents.map((document) => {
+          const currentVersion = document.versions[document.versions.length - 1];
+
+          return (
+            <div>
+              <!-- Document Header -->
+              <div class="mb-8">
+                <div class="flex items-start justify-between gap-4 mb-3">
+                  <div>
+                    <h2 class="text-3xl font-bold text-foreground mb-2">
+                      {document.title}
+                    </h2>
+                    <p class="text-muted-foreground">
+                      {document.description}
+                    </p>
+                  </div>
+                  <a
+                    href={`/${document.id}`}
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors whitespace-nowrap"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    View Current
+                  </a>
+                </div>
+              </div>
+
+              <!-- Current Version Info -->
+              <div class="border border-primary/50 bg-primary/5 rounded-lg p-6">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex items-center gap-3">
+                    <span class="px-3 py-1 rounded-full text-sm font-semibold bg-primary text-primary-foreground">
+                      {currentVersion?.version}
+                    </span>
+                    <span class="flex items-center gap-1.5 text-sm font-medium text-primary">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      Current
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <time class="text-sm text-muted-foreground">
+                      {currentVersion?.effectiveDate.toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </time>
+                    <a
+                      href={`/${document.id}`}
+                      class="text-sm text-primary hover:underline font-medium"
+                    >
+                      View Document
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider between documents */}
+              {document !== documents[documents.length - 1] && (
+                <div class="mt-16 border-t"></div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <!-- Footer Info -->
+      <div class="mt-16 p-6 bg-muted/30 rounded-lg border">
+        <div class="flex gap-4">
+          <div class="text-primary mt-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-foreground mb-1">Transparency & Version Control</h3>
+            <p class="text-sm text-muted-foreground mb-2">
+              We maintain complete history of all legal documents. When we make changes, we provide detailed explanations of what changed and why.
+            </p>
+            <p class="text-sm text-muted-foreground">
+              Click "View Document" to read the full text of any version, or "View Current" to see the latest version.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>

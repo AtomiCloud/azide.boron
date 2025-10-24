@@ -1,0 +1,16 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  upload:
+    name: Upload to Landscapes
+    uses: ./.github/workflows/⚡reusable-upload.yaml
+    secrets: inherit
+    with:
+      atomi_platform: azide
+      atomi_service: boron
+      release_tag: ${{ github.ref_name }}

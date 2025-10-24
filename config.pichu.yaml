@@ -1,0 +1,4 @@
+# Pichu (Production) environment overrides
+
+site:
+  url: 'https://boron-azide-pichu.kirinnee.workers.dev'

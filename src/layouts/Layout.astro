@@ -1,0 +1,110 @@
+---
+import SEO from '../components/SEO.astro';
+import { Footer } from '../components/Footer';
+import { getConfig } from '../lib/config';
+import { hexToHSL } from '../lib/color-utils';
+import { pwaInfo } from 'virtual:pwa-info';
+import '../styles/globals.css';
+
+export interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  article?: boolean;
+  noindex?: boolean;
+}
+
+const config = getConfig();
+const { title, description, image, article, noindex } = Astro.props;
+
+// Convert primary color to HSL for CSS variables
+const primaryHSL = hexToHSL(config.theme.primary);
+
+// Create a lighter version for dark mode by increasing lightness by 15%
+const [h, s, l] = primaryHSL.split(' ').map(v => parseFloat(v));
+const lighterL = Math.min(l + 15, 85); // Cap at 85% to avoid too bright
+const primaryHSLDark = `${h} ${s} ${lighterL}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+
+    <!-- Apple Web App Capable -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content={config.app.shortName} />
+
+    <!-- SEO -->
+    <SEO
+      title={title}
+      description={description}
+      image={image}
+      article={article}
+      noindex={noindex}
+    />
+
+    <!-- RSS Feed -->
+    <link rel="alternate" type="application/rss+xml" title={`${config.app.name} RSS Feed`} href="/rss.xml" />
+
+    <!-- PWA Manifest -->
+    {pwaInfo?.webManifest?.linkTag && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content={config.theme.primary} />
+
+    <!-- Theme initialization script (must run before body renders to prevent flash) -->
+    <script is:inline>
+      // This script runs immediately to prevent flash of unstyled content
+      (function() {
+        const theme = localStorage.getItem('theme');
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else if (theme === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else {
+          // Use system preference if no saved theme
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (prefersDark) {
+            document.documentElement.classList.add('dark');
+          }
+        }
+      })();
+    </script>
+
+    <!-- Preload critical assets -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Dynamic CSS variables from config - MUST come after globals.css to override -->
+    <style is:inline set:html={`
+      :root {
+        --primary: ${primaryHSL};
+        --ring: ${primaryHSL};
+      }
+      .dark {
+        --primary: ${primaryHSLDark};
+        --ring: ${primaryHSLDark};
+      }
+    `} />
+  </head>
+  <body>
+    <slot />
+
+    <!-- Footer -->
+    <Footer config={config} client:load />
+
+    <!-- PWA Registration Script -->
+    {pwaInfo?.registerSW && <Fragment set:html={pwaInfo.registerSW} />}
+  </body>
+</html>

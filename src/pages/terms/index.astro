@@ -1,0 +1,12 @@
+---
+import LegalDocumentLayout from '../../layouts/LegalDocumentLayout.astro';
+import { getTermsOfService } from '../../lib/legal-documents';
+import { getConfig } from '../../lib/config';
+
+const config = getConfig();
+const termsOfService = getTermsOfService(config);
+
+// Show the latest version (no version parameter = latest)
+---
+
+<LegalDocumentLayout document={termsOfService} />

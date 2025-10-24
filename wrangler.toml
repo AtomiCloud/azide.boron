@@ -1,0 +1,38 @@
+name = "azide-boron-frontend"
+compatibility_date = "2024-12-30"
+
+# Static assets configuration for pure static Astro site
+[assets]
+directory = "./dist"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# Environment-specific configurations
+[env.lapras]
+name = "boron-azide-lapras"
+
+[env.lapras.vars]
+LANDSCAPE = "lapras"
+
+# PICHU
+[env.pichu]
+name = "boron-azide-pichu"
+
+[env.pichu.vars]
+LANDSCAPE = "pichu"
+
+# PIKACHU
+[env.pikachu]
+name = "boron-azide-pikachu"
+
+[env.pikachu.vars]
+LANDSCAPE = "pikachu"
+
+# RAICHU
+[env.raichu]
+name = "boron-azide-raichu"
+
+[env.raichu.vars]
+LANDSCAPE = "raichu"

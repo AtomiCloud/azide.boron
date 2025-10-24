@@ -1,0 +1,22 @@
+# Pikachu (Production) environment overrides
+
+site:
+  url: 'https://boron-azide-pikachu.kirinnee.workers.dev'
+  author: 'AtomiCloud Team'
+
+social:
+  twitter: 'https://twitter.com/azideboron'
+  github: 'https://github.com/azideboron'
+  discord: 'https://discord.gg/azideboron'
+  youtube: 'https://youtube.com/@azideboron'
+  tiktok: 'https://tiktok.com/@azideboron'
+  linkedin: 'https://linkedin.com/company/azideboron'
+  instagram: 'https://instagram.com/azideboron'
+  telegram: 'https://t.me/azideboron'
+  email: 'hello@azideboron.com'
+  whatsapp: '1234567890'
+
+legal:
+  contactEmail: 'admin@atomi.cloud'
+  dpoEmail: 'ernest@atomi.cloud'
+  companyName: 'AtomiCloud'

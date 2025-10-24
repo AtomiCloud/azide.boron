@@ -1,0 +1,118 @@
+---
+import Layout from './Layout.astro';
+import { Badge } from '../components/ui/badge';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { PWAInstallButton } from '../components/PWAInstallButton';
+import { ReadingProgress } from '../components/ReadingProgress';
+import { SocialShareButtons } from '../components/SocialShareButtons';
+import { getConfig } from '../lib/config';
+import { calculateReadTimeFromHTML } from '../lib/read-time';
+import type { BlogPost } from '../lib/blog-posts';
+
+interface Props {
+  post: BlogPost;
+  readTime?: number; // in minutes (optional, will be auto-calculated if not provided)
+}
+
+const config = getConfig();
+const { post } = Astro.props;
+
+// Calculate read time from slot content if not provided
+const slotContent = await Astro.slots.render('default');
+const readTime = Astro.props.readTime || calculateReadTimeFromHTML(slotContent);
+
+const formattedDate = post.date.toLocaleDateString('en-US', {
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+// Construct full URL for sharing
+const postUrl = `${config.site.url}/blog/${post.slug}`;
+---
+
+<Layout
+  title={post.title}
+  description={post.description}
+  image={`/blog/${post.slug}/og.png`}
+  article={true}
+>
+  <div class="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <!-- Sticky Top Bar with Reading Progress -->
+    <header class="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border relative overflow-hidden">
+      <!-- Reading Progress Background (Behind everything) -->
+      <ReadingProgress client:load />
+
+      <div class="container mx-auto px-3 md:px-4 max-w-4xl relative z-10">
+        <div class="flex justify-between items-center py-4">
+          <!-- Back Button -->
+          <a
+            href="/"
+            class="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            <svg
+              class="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Back to Blog
+          </a>
+
+          <!-- Theme Toggle and PWA Install -->
+          <div class="flex items-center gap-3">
+            <PWAInstallButton client:load />
+            <ThemeToggle client:load />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="container mx-auto px-3 md:px-4 py-8 max-w-4xl">
+
+      <!-- Article Header -->
+      <article class="md:bg-card md:rounded-lg md:border md:shadow-sm p-4 md:p-8 mb-8">
+        <header class="mb-8 pb-8 border-b">
+          <div class="flex flex-wrap items-center gap-2 mb-4">
+            <Badge client:load className="capitalize">{post.topic}</Badge>
+            {post.tags.map((tag) => (
+              <Badge client:load variant="outline" className="text-xs">
+                #{tag}
+              </Badge>
+            ))}
+          </div>
+          <h1 class="text-4xl font-bold mb-4 text-foreground">{post.title}</h1>
+          <p class="text-xl text-muted-foreground mb-4">{post.description}</p>
+          <div class="flex items-center gap-4 text-sm text-muted-foreground">
+            <span class="font-semibold text-foreground">{post.author}</span>
+            <span>•</span>
+            <time datetime={post.date.toISOString()}>{formattedDate}</time>
+            {readTime && (
+              <>
+                <span>•</span>
+                <span>{readTime} min read</span>
+              </>
+            )}
+          </div>
+        </header>
+
+        <!-- Blog Content -->
+        <div class="prose prose-lg max-w-none" set:html={slotContent} />
+
+        <!-- Social Share Buttons -->
+        <SocialShareButtons
+          title={post.title}
+          description={post.description}
+          url={postUrl}
+          client:load
+        />
+      </article>
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,8 @@
+# Lapras (Development) environment overrides
+
+site:
+  url: 'http://localhost:8787'
+
+seo:
+  defaultTitle: 'Azide Boron (Dev)'
+  titleTemplate: '%s | Azide Boron (Dev)'

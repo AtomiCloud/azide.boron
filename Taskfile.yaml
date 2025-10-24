@@ -1,0 +1,61 @@
+version: '3'
+
+tasks:
+  setup:
+    desc: 'Setup the repository'
+    cmds:
+      - bun install
+  lint:
+    desc: 'Lints the repository'
+    cmds:
+      - pre-commit run --all-files
+  dev:
+    desc: Starts development
+    cmds:
+      - bun run dev
+  build:
+    desc: Builds the astro project
+    cmds:
+      - bun run build
+  generate-pwa-assets:
+    desc: 'Generate PWA assets from source logo'
+    summary: |
+      Generates all PWA icons and favicons from the source logo at public/pwa-assets/logo.svg
+
+      Generated files:
+      - favicon.ico
+      - apple-touch-icon-180x180.png
+      - pwa-64x64.png, pwa-192x192.png, pwa-512x512.png
+      - maskable-icon-512x512.png
+    cmds:
+      - bun run generate-pwa-assets
+  preview:
+    desc: 'Preview the application'
+    summary: |
+      Builds the static Astro site and starts wrangler dev server for local testing.
+    env:
+      LANDSCAPE: lapras
+    cmds:
+      - ./scripts/local/preview.sh
+  upload:
+    desc: 'Upload to specific landscape'
+    summary: |
+      Upload to a specific landscape environment.
+
+      Usage: pls upload -- <landscape>
+
+      Landscapes: lapras, pichu, pikachu, raichu
+      Tag: Optional release tag to include in description
+    cmds:
+      - ./scripts/ci/upload.sh {{.CLI_ARGS}} upload "local-$(openssl rand -hex 3)"
+  deploy:
+    desc: 'Deploy to specific landscape'
+    summary: |
+      Deploy to a specific landscape environment.
+
+      Usage: pls deploy -- <landscape>
+
+      Landscapes: lapras, pichu, pikachu, raichu
+      Tag: Optional release tag to include in description
+    cmds:
+      - ./scripts/ci/upload.sh {{.CLI_ARGS}} deploy "local-$(openssl rand -hex 3)"
