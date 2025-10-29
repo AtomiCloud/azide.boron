@@ -29,23 +29,12 @@ const primaryHSLDark = `${h} ${s} ${lighterL}`;
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Critical meta tags -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
-
-    <!-- Apple Web App Capable -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content={config.app.shortName} />
-
-    <!-- SEO -->
+    <!-- SEO & OG meta tags (HIGH PRIORITY for crawlers) -->
     <SEO
       title={title}
       description={description}
@@ -54,14 +43,33 @@ const primaryHSLDark = `${h} ${s} ${lighterL}`;
       noindex={noindex}
     />
 
+    <!-- Theme Color -->
+    <meta name="theme-color" content={config.theme.primary} />
+
+    <!-- Apple Web App Capable -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content={config.app.shortName} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+
     <!-- RSS Feed -->
     <link rel="alternate" type="application/rss+xml" title={`${config.app.name} RSS Feed`} href="/rss.xml" />
 
     <!-- PWA Manifest -->
     {pwaInfo?.webManifest?.linkTag && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
 
-    <!-- Theme Color -->
-    <meta name="theme-color" content={config.theme.primary} />
+    <!-- Preload critical assets -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Preload OG image for faster social media crawler fetching -->
+    {image && <link rel="preload" as="image" href={image} />}
 
     <!-- Theme initialization script (must run before body renders to prevent flash) -->
     <script is:inline>
@@ -81,10 +89,6 @@ const primaryHSLDark = `${h} ${s} ${lighterL}`;
         }
       })();
     </script>
-
-    <!-- Preload critical assets -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <!-- Dynamic CSS variables from config - MUST come after globals.css to override -->
     <style is:inline set:html={`
