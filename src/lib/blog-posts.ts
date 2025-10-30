@@ -7,6 +7,7 @@ export interface BlogPost {
   topic: 'tech' | 'marketing' | 'entrepreneurship' | 'productivity' | 'health';
   tags: string[];
   image?: string;
+  shareMessage?: string;
 }
 
 interface AstroModule {
@@ -18,6 +19,7 @@ interface AstroModule {
     topic: 'tech' | 'marketing' | 'entrepreneurship' | 'productivity' | 'health';
     tags?: string[];
     image?: string;
+    shareMessage?: string;
   };
 }
 
@@ -48,6 +50,7 @@ function loadBlogPosts(): BlogPost[] {
         topic: frontmatter.topic,
         tags: frontmatter.tags || [],
         image: frontmatter.image,
+        shareMessage: frontmatter.shareMessage,
       });
     }
   }
