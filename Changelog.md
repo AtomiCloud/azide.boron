@@ -1,3 +1,15 @@
+## [1.1.0](https://github.com/AtomiCloud/azide.boron/compare/v1.0.0...v1.1.0) (2025-10-30)
+
+
+### ✨ Features ✨
+
+* plausible integration ([1cff4f8](https://github.com/AtomiCloud/azide.boron/commit/1cff4f8d601a52821ecb9b3e83d4c3d58e3d42ef))
+
+
+### 🐛 Bug Fixes 🐛
+
+* incorrect main card ([f080e2d](https://github.com/AtomiCloud/azide.boron/commit/f080e2d40427f2a2570dd3b936b69365e7e8dd58))
+
 ## 1.0.0 (2025-10-29)
 
 
