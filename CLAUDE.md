@@ -478,5 +478,28 @@ For static sites, Astro's built-in image optimization works during build time:
 
 Each environment (lapras/pichu/pikachu/raichu) has a `LANDSCAPE` variable to identify the deployment environment. Build metadata is automatically injected during all deployment workflows.
 
+## Content Conventions
+
+### Author Name Formatting
+
+When using git usernames or machine-readable identifiers as author names in blog posts or other content, always convert them to human-readable format:
+
+**Examples:**
+
+- `adelphi-liong` → `Adelphi Liong`
+- `john-doe-123` → `John Doe`
+- `jane_smith` → `Jane Smith`
+
+**Rules:**
+
+- Replace hyphens and underscores with spaces
+- Capitalize the first letter of each word (title case)
+- Remove numeric suffixes unless they're part of the actual name
+- Use proper name formatting conventions
+
+This ensures content feels natural and professional rather than machine-generated.
+
+## Development Notes
+
 - never run `pls dev` yourself, the user will always run the server
 - Not start the development server with pls dev since the user users will run it themselves. We can assume that the server is already running at localhost:4321 at any time.

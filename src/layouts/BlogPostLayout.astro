@@ -37,7 +37,7 @@ const postUrl = `${config.site.url}/blog/${post.slug}`;
   image={`/blog/${post.slug}/og.png`}
   article={true}
 >
-  <div class="min-h-screen bg-gradient-to-b from-background to-muted/20">
+  <div class="flex-1 bg-gradient-to-b from-background to-muted/20">
     <!-- Sticky Top Bar with Reading Progress -->
     <header class="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border relative overflow-hidden">
       <!-- Reading Progress Background (Behind everything) -->
@@ -103,15 +103,20 @@ const postUrl = `${config.site.url}/blog/${post.slug}`;
         </header>
 
         <!-- Blog Content -->
-        <div class="prose prose-lg max-w-none" set:html={slotContent} />
+        <div class="prose prose-2xl max-w-none" set:html={slotContent} />
 
         <!-- Social Share Buttons -->
-        <SocialShareButtons
-          title={post.title}
-          description={post.description}
-          url={postUrl}
-          client:load
-        />
+        <div class="my-8">
+          <SocialShareButtons
+            title={post.title}
+            description={post.description}
+            url={postUrl}
+            client:load
+          />
+        </div>
+
+        <!-- References Section (if provided) -->
+        <slot name="references" />
       </article>
     </div>
   </div>

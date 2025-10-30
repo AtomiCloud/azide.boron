@@ -16,67 +16,43 @@ const topics = [...new Set(allPosts.map(post => post.topic))];
   title="Blog"
   description={`Insights on ${topics.join(', ')} and more`}
 >
-  <div class="min-h-screen relative overflow-hidden">
-    <!-- Background Layers -->
-    <div class="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+  <div class="flex-1 relative">
+    <!-- Background Layers - Optimized for performance -->
+    <div class="fixed inset-0 -z-10 pointer-events-none">
       <!-- Solid background base -->
       <div class="absolute inset-0 bg-background"></div>
 
       <!-- Simple Gradient Overlay -->
       <div class="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background"></div>
 
-      <!-- Gradient Orbs Background - More spots, different colors -->
-      <div class="absolute inset-0">
+      <!-- Reduced Gradient Orbs - Only 3 for better performance -->
+      <div class="absolute inset-0 will-change-transform">
         <!-- Top left - Primary color -->
-        <div class="absolute top-0 -left-4 w-[600px] h-[600px] bg-primary/30 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-70 dark:opacity-25 animate-blob"></div>
+        <div class="absolute top-0 -left-4 w-[600px] h-[600px] bg-primary/20 rounded-full mix-blend-multiply dark:mix-blend-normal opacity-50 dark:opacity-20 animate-blob-slow"></div>
 
         <!-- Top right - Purple -->
-        <div class="absolute top-0 -right-4 w-[500px] h-[500px] bg-purple-400/30 dark:bg-purple-500/20 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-70 dark:opacity-20 animate-blob animation-delay-2000"></div>
+        <div class="absolute top-0 -right-4 w-[500px] h-[500px] bg-purple-400/20 dark:bg-purple-500/15 rounded-full mix-blend-multiply dark:mix-blend-normal opacity-50 dark:opacity-15 animate-blob-slow animation-delay-3000"></div>
 
-        <!-- Top center - Violet -->
-        <div class="absolute top-10 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-violet-400/25 dark:bg-violet-500/15 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-60 dark:opacity-15 animate-blob animation-delay-6000"></div>
-
-        <!-- Middle left - Cyan/Blue -->
-        <div class="absolute top-1/3 -left-20 w-[450px] h-[450px] bg-cyan-400/25 dark:bg-cyan-500/15 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-60 dark:opacity-15 animate-blob animation-delay-3000"></div>
-
-        <!-- Center - Indigo -->
-        <div class="absolute top-1/2 left-1/3 w-[400px] h-[400px] bg-indigo-400/20 dark:bg-indigo-500/12 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-50 dark:opacity-12 animate-blob animation-delay-7000"></div>
-
-        <!-- Center right - Pink -->
-        <div class="absolute top-1/2 -right-20 w-[550px] h-[550px] bg-pink-400/25 dark:bg-pink-500/15 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-60 dark:opacity-15 animate-blob animation-delay-1000"></div>
-
-        <!-- Middle right - Rose -->
-        <div class="absolute top-2/3 right-1/4 w-[380px] h-[380px] bg-rose-400/20 dark:bg-rose-500/12 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-50 dark:opacity-12 animate-blob animation-delay-8000"></div>
-
-        <!-- Bottom left - Amber/Orange -->
-        <div class="absolute bottom-0 left-20 w-[500px] h-[500px] bg-amber-400/25 dark:bg-amber-500/15 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-60 dark:opacity-15 animate-blob animation-delay-4000"></div>
-
-        <!-- Bottom center - Emerald -->
-        <div class="absolute bottom-10 left-1/2 w-[420px] h-[420px] bg-emerald-400/20 dark:bg-emerald-500/12 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-50 dark:opacity-12 animate-blob animation-delay-9000"></div>
-
-        <!-- Bottom right - Teal -->
-        <div class="absolute bottom-10 right-10 w-[450px] h-[450px] bg-teal-400/20 dark:bg-teal-500/12 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-50 dark:opacity-12 animate-blob animation-delay-5000"></div>
-
-        <!-- Bottom far left - Fuchsia -->
-        <div class="absolute bottom-20 -left-10 w-[360px] h-[360px] bg-fuchsia-400/18 dark:bg-fuchsia-500/10 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-45 dark:opacity-10 animate-blob animation-delay-10000"></div>
+        <!-- Bottom center - Blue -->
+        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-blue-400/20 dark:bg-blue-500/15 rounded-full mix-blend-multiply dark:mix-blend-normal opacity-50 dark:opacity-15 animate-blob-slow animation-delay-6000"></div>
       </div>
     </div>
 
-    <!-- Sticky Top Bar -->
-    <header class="sticky top-0 z-50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 border-b border-border/50 shadow-sm relative">
+    <!-- Sticky Top Bar - Solid background for better scroll performance -->
+    <header class="sticky top-0 z-50 bg-background border-b border-border/50 shadow-sm">
       <div class="container mx-auto px-3 md:px-4 max-w-4xl">
         <div class="flex justify-between items-center py-4">
           <!-- Logo -->
           <a href="/" class="flex items-center gap-3">
             <img src="/logo.svg" alt={config.app.name} class="h-8 w-8" />
-            <span class="font-bold text-lg text-foreground">{config.app.shortName}</span>
+            <span class="font-bold text-lg text-foreground hidden md:inline">{config.app.shortName}</span>
           </a>
 
           <!-- RSS, PWA Install, and Theme Toggle -->
           <div class="flex items-center gap-3">
             <a
               href="/rss.xml"
-              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-background/60 hover:bg-card transition-colors text-sm font-medium"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-card hover:bg-card/80 transition-colors text-sm font-medium"
               target="_blank"
               rel="noopener noreferrer"
               title="Subscribe via RSS"
@@ -109,7 +85,7 @@ const topics = [...new Set(allPosts.map(post => post.topic))];
             <h1 class="text-5xl font-bold mb-4 text-foreground">
               {config.app.name}
             </h1>
-            <p class="text-xl text-muted-foreground">{config.app.description}</p>
+            <p class="text-xl text-foreground/60 dark:text-muted-foreground">{config.app.description}</p>
           </div>
         </div>
       </header>
@@ -131,18 +107,18 @@ const topics = [...new Set(allPosts.map(post => post.topic))];
 
       <!-- Topic Filter -->
       <div class="flex flex-wrap justify-center gap-2 md:gap-3 mb-8 md:mb-12">
-        <button class="filter-btn active px-6 py-2.5 rounded-lg border-2 border-transparent bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold text-sm transition-all hover:from-primary/90 hover:to-primary/70 hover:-translate-y-0.5" data-topic="all">
+        <button class="filter-btn active px-6 py-2.5 rounded-lg border-2 border-transparent bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold text-sm transition-all hover:from-primary/90 hover:to-primary/70 hover:-translate-y-0.5 hover:shadow-lg" data-topic="all">
           All
         </button>
         {topics.map((topic) => (
-          <button class="filter-btn px-6 py-2.5 rounded-lg border-2 border-border/50 bg-background/60 backdrop-blur-sm text-foreground font-semibold text-sm transition-all hover:border-primary hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:text-primary hover:-translate-y-0.5 capitalize" data-topic={topic}>
+          <button class="filter-btn px-6 py-2.5 rounded-lg border-2 border-border/50 bg-card text-foreground font-semibold text-sm transition-all hover:border-primary hover:bg-primary/5 hover:-translate-y-0.5 hover:shadow-md capitalize" data-topic={topic}>
             {topic}
           </button>
         ))}
       </div>
 
       <!-- Blog Posts Grid -->
-      <div class="grid md:grid-cols-2 gap-4 md:gap-6 mb-12" id="posts-grid">
+      <div class="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 py-4" id="posts-grid">
         {allPosts.map((post) => {
           const formattedDate = post.date.toLocaleDateString('en-US', {
             month: 'short',
@@ -157,10 +133,10 @@ const topics = [...new Set(allPosts.map(post => post.topic))];
               data-search-content={`${post.title.toLowerCase()} ${post.description.toLowerCase()} ${post.author.toLowerCase()} ${post.topic.toLowerCase()} ${post.tags.join(' ').toLowerCase()}`}
             >
               <a href={`/blog/${post.slug}`} class="block h-full">
-                <Card client:load className="h-full transition-all hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 hover:border-primary/50">
+                <Card className="h-full transition-all hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 hover:border-primary/50">
                   <CardContent className="pt-6">
                     <div class="flex items-center gap-2 mb-3">
-                      <Badge client:load className="capitalize">{post.topic}</Badge>
+                      <Badge className="capitalize">{post.topic}</Badge>
                     </div>
                     <h2 class="text-xl font-bold mb-2 text-foreground group-hover:text-primary transition-colors">
                       {post.title}
@@ -170,7 +146,7 @@ const topics = [...new Set(allPosts.map(post => post.topic))];
                     </p>
                     <div class="flex flex-wrap gap-1.5 mb-3">
                       {post.tags.slice(0, 3).map((tag) => (
-                        <Badge client:load variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs">
                           #{tag}
                         </Badge>
                       ))}
@@ -339,14 +315,14 @@ const topics = [...new Set(allPosts.map(post => post.topic))];
     btn.addEventListener('click', () => {
       filterBtns.forEach((b) => {
         // Remove active gradient styles
-        b.classList.remove('active', 'border-transparent', 'bg-gradient-to-r', 'from-primary', 'to-primary/80', 'text-primary-foreground', 'hover:from-primary/90', 'hover:to-primary/70', 'hover:-translate-y-0.5');
+        b.classList.remove('active', 'border-transparent', 'bg-gradient-to-r', 'from-primary', 'to-primary/80', 'text-primary-foreground', 'hover:from-primary/90', 'hover:to-primary/70', 'hover:shadow-lg');
         // Add inactive styles
-        b.classList.add('border-border/50', 'bg-background/60', 'backdrop-blur-sm', 'text-foreground');
+        b.classList.add('border-border/50', 'bg-card', 'text-foreground', 'hover:bg-primary/5', 'hover:shadow-md');
       });
       // Remove inactive styles
-      btn.classList.remove('border-border/50', 'bg-background/60', 'backdrop-blur-sm', 'text-foreground');
+      btn.classList.remove('border-border/50', 'bg-card', 'text-foreground', 'hover:bg-primary/5', 'hover:shadow-md');
       // Add active gradient styles
-      btn.classList.add('active', 'border-transparent', 'bg-gradient-to-r', 'from-primary', 'to-primary/80', 'text-primary-foreground', 'hover:from-primary/90', 'hover:to-primary/70', 'hover:-translate-y-0.5');
+      btn.classList.add('active', 'border-transparent', 'bg-gradient-to-r', 'from-primary', 'to-primary/80', 'text-primary-foreground', 'hover:from-primary/90', 'hover:to-primary/70', 'hover:shadow-lg');
       currentTopic = btn.getAttribute('data-topic') || 'all';
       filterPosts();
     });
@@ -447,23 +423,23 @@ const topics = [...new Set(allPosts.map(post => post.topic))];
     opacity: 0.02;
   }
 
-  @keyframes blob {
+  @keyframes blob-slow {
     0% {
       transform: translate(0px, 0px) scale(1);
     }
     33% {
-      transform: translate(30px, -50px) scale(1.1);
+      transform: translate(20px, -30px) scale(1.05);
     }
     66% {
-      transform: translate(-20px, 20px) scale(0.9);
+      transform: translate(-15px, 15px) scale(0.95);
     }
     100% {
       transform: translate(0px, 0px) scale(1);
     }
   }
 
-  .animate-blob {
-    animation: blob 8s infinite;
+  .animate-blob-slow {
+    animation: blob-slow 12s ease-in-out infinite;
   }
 
   .animation-delay-1000 {
@@ -504,5 +480,20 @@ const topics = [...new Set(allPosts.map(post => post.topic))];
 
   .animation-delay-10000 {
     animation-delay: 10s;
+  }
+
+  /* Performance optimizations */
+  #posts-grid {
+    contain: layout style;
+  }
+
+  .post-card {
+    contain: layout;
+    will-change: transform;
+  }
+
+  /* Force GPU acceleration for background */
+  .animate-blob-slow {
+    transform: translateZ(0);
   }
 </style>

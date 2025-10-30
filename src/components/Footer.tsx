@@ -38,9 +38,24 @@ export function Footer({ config }: FooterProps) {
   ];
 
   return (
-    <footer className="mt-auto border-t border-border bg-background">
+    <footer className="mt-auto border-t border-border bg-background relative z-20">
       <div className="container mx-auto px-6 py-8 max-w-4xl">
         <div className="flex flex-col items-center gap-6">
+          {/* Links */}
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
+            <a href="/" className="text-muted-foreground hover:text-foreground transition-colors">
+              Home
+            </a>
+            <span className="text-muted-foreground">•</span>
+            <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
+              About
+            </a>
+            <span className="text-muted-foreground">•</span>
+            <a href="/legal" className="text-muted-foreground hover:text-foreground transition-colors">
+              Legal
+            </a>
+          </nav>
+
           {/* Social Links */}
           <div className="flex flex-wrap items-center justify-center gap-4">
             {socialLinks.map(({ name, icon: Icon, url }) => (
@@ -58,25 +73,10 @@ export function Footer({ config }: FooterProps) {
             ))}
           </div>
 
-          {/* Links & Copyright */}
-          <div className="flex flex-col items-center gap-3">
-            <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
-              <a href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                Home
-              </a>
-              <span className="text-muted-foreground">•</span>
-              <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
-                About
-              </a>
-              <span className="text-muted-foreground">•</span>
-              <a href="/legal" className="text-muted-foreground hover:text-foreground transition-colors">
-                Legal
-              </a>
-            </nav>
-            <p className="text-xs text-muted-foreground text-center">
-              &copy; {currentYear} {config.app.name}. All rights reserved.
-            </p>
-          </div>
+          {/* Copyright */}
+          <p className="text-xs text-muted-foreground text-center">
+            &copy; {currentYear} {config.app.name}. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

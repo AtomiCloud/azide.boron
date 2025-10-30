@@ -181,6 +181,126 @@ const post = getBlogPost('post-slug')!;
 </BlogPostLayout>
 ```
 
+## Content Quality Standards
+
+When creating blog posts, prioritize these non-functional requirements to ensure exceptional quality:
+
+### 1. Rigorous & Research-Backed
+
+- **Cite credible sources**: Reference academic papers, industry research, or authoritative publications
+- **Provide evidence**: Back up claims with data, statistics, or expert opinions
+- **Include references**: Add inline citations or a "References" section at the end
+- **Verify facts**: Cross-check information before including it
+- **Use Badge components** to highlight research citations: `<Badge client:load variant="outline">Source: Nature 2024</Badge>`
+
+Example citation format:
+
+```astro
+<p class="mb-4">
+  Recent studies show that AI-assisted writing increases productivity by 40%
+  <Badge client:load variant="outline" className="ml-2">MIT Study 2024</Badge>
+</p>
+```
+
+### 2. Unique & Original
+
+- **Fresh perspective**: Avoid rehashing common takes; find a novel angle
+- **Original insights**: Share observations that aren't widely discussed
+- **Unique examples**: Use specific, concrete examples rather than generic scenarios
+- **Personal research**: Consider conducting small experiments or surveys
+- **Challenge assumptions**: Question conventional wisdom where appropriate
+
+### 3. Insightful & Thought-Provoking
+
+- **Second-order thinking**: Go beyond obvious observations
+- **Hidden connections**: Reveal non-obvious relationships between concepts
+- **"Aha!" moments**: Structure content to deliver surprising realizations
+- **Counterintuitive points**: Highlight phenomena that contradict expectations
+- **Deep implications**: Explore the broader consequences of the topic
+
+Use Card components to spotlight key insights:
+
+```astro
+<Card client:load className="bg-primary/5 border-primary">
+  <CardHeader>
+    <CardTitle className="text-xl">💡 Key Insight</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p class="text-muted-foreground">
+      The surprising observation that changes how we think about [topic]...
+    </p>
+  </CardContent>
+</Card>
+```
+
+### 4. Click-Baity & Engaging (Ethically)
+
+- **Compelling hook**: Open with a surprising fact, provocative question, or vivid scenario
+- **Curiosity gaps**: Tease interesting information that gets revealed later
+- **Pattern interrupts**: Break expectations to maintain attention
+- **Progressive disclosure**: Build tension by revealing information gradually
+- **Payoff**: Ensure the content delivers on the promise of the title
+- **Scroll-stopping subheadings**: Make H2/H3 headings intriguing enough to keep reading
+
+**Opening hook strategies:**
+
+- Start with a counterintuitive statement
+- Begin with a mini-story or anecdote
+- Ask a provocative question
+- Present a surprising statistic
+- Describe a relatable problem vividly
+
+### 5. Narrative & Story-Driven
+
+- **Story arc**: Structure with beginning (setup), middle (tension), end (resolution)
+- **Concrete scenarios**: Use specific examples and case studies
+- **Character elements**: Feature real people or personified concepts
+- **Tension and conflict**: Highlight problems, challenges, or paradoxes
+- **Visual storytelling**: Use descriptive language that paints mental pictures
+- **Emotional resonance**: Connect with readers' experiences and feelings
+
+**Narrative techniques:**
+
+- Use "Before/After" frameworks
+- Tell origin stories of ideas or technologies
+- Create hypothetical scenarios readers can visualize
+- Use metaphors and analogies to make abstract concepts concrete
+- Include micro-stories within sections (2-3 sentence anecdotes)
+
+**Story structure template:**
+
+```astro
+<!-- Act 1: Setup -->
+<p class="text-lg">
+  [Hook: Surprising observation or relatable problem]
+</p>
+
+<!-- Act 2: Investigation -->
+<h2>The Hidden Pattern</h2>
+<p>[Explore the phenomenon with research and examples]</p>
+
+<!-- Act 3: Implications -->
+<h2>What This Means For You</h2>
+<p>[Connect insights to reader's life]</p>
+
+<!-- Resolution: Key Takeaways -->
+<h2>Key Takeaways</h2>
+[Distill the lessons learned]
+```
+
+### Content Quality Checklist
+
+Before publishing, verify:
+
+- [ ] At least 2-3 credible sources cited
+- [ ] Unique angle or perspective not commonly discussed
+- [ ] At least one "aha!" insight that surprises readers
+- [ ] Opening hook that grabs attention within first 2 sentences
+- [ ] Clear narrative arc with tension and resolution
+- [ ] Concrete examples and scenarios (not just abstract concepts)
+- [ ] Title delivers on its promise
+- [ ] Ending provides satisfying closure and actionable takeaways
+
 ## SEO & Design Requirements
 
 ### Typography

@@ -1,0 +1,150 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { getBlogPost } from '../../lib/blog-posts';
+import GlobalImpactCalculator from '../../components/GlobalImpactCalculator';
+import CompressionDiagram from '../../components/CompressionDiagram';
+
+export const frontmatter = {
+  title: 'The LLM Inflation Paradox',
+  description: 'We expand messages for professionalism, they compress them for speed. The waste accumulates in between.',
+  author: 'Adelphi Liong',
+  date: '2025-10-29',
+  topic: 'tech' as const,
+  tags: ['ai', 'efficiency', 'systems-thinking'],
+};
+
+const post = getBlogPost('the-llm-inflation-paradox')!;
+---
+
+<BlogPostLayout post={post}>
+  <p class="text-lg leading-relaxed mb-6">
+    I used Gemini in Gmail to turn bullet points into a professional email. My colleague got the email, saw the Gemini summary at the top, and read that instead. We both saved time. The information transferred perfectly. Something still feels off.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Pattern</h2>
+
+  <p class="mb-6">
+    It's not just emails. Look around:
+  </p>
+
+  <p class="mb-6">
+    You draft a document in Notion - AI expands your outline into full paragraphs. Your teammate opens it, clicks "summarize," reads three bullet points. The meeting notes you spent five minutes generating with Claude get fed into another LLM by the next reader. Code comments you let Copilot write get compressed by the reviewer's AI assistant.
+  </p>
+
+  <p class="mb-6">
+    Slack messages. Google Docs. Confluence pages. Pull request descriptions. Everywhere you look, the same cycle: expand before sending, compress on arrival.
+  </p>
+
+  <p class="mb-6">
+    We've built this loop into everything we write.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Overhead Isn't New</h2>
+
+  <p class="mb-6">
+    We've always added overhead to communication. The question is: what does it buy us?
+  </p>
+
+  <p class="mb-6">
+    <strong>Bureaucracy adds paperwork for accountability.</strong> Every decision gets documented. Every approval needs a signature. A $50 purchase request needs five forms. The overhead serves a purpose: prevent fraud, enable audits, create paper trails. The cost is justified.
+  </p>
+
+  <p class="mb-6">
+    <strong>TCP/IP adds headers for reliability.</strong> Every packet carries 40 bytes of routing information. For a 1-byte payload, that's 4,000% overhead. But without those headers, packets get lost, arrive out of order, or corrupted. The overhead enables the system to function.
+  </p>
+
+  <p class="mb-6">
+    <strong>Professional emails grew verbose for signaling.</strong> "Approved" became "I hope this email finds you well. After careful review with stakeholders, I'm pleased to confirm we can proceed. Please let me know if you have concerns. Best regards." Same information. Different signal. The verbosity shows effort, politeness, care.
+  </p>
+
+  <p class="mb-6">
+    Then LLMs arrived and made signaling free. Everyone can sound professional instantly. So what happens?
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Inversion</h2>
+
+  <p class="mb-6">
+    Traditional compression: minimize what travels over the wire.
+  </p>
+
+  <CompressionDiagram client:load />
+
+  <p class="mb-6">
+    Same data in. Same data out. But look at what crosses the wire.
+  </p>
+
+  <p class="mb-6">
+    The individual time savings are real. Your cognitive effort drops. LLM processing happens in parallel - you're not waiting. The recipient gets exactly what they need. Every link in the chain gets faster.
+  </p>
+
+  <p class="mb-6">
+    But the system? The system's burning energy on both ends for the same result.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Pollution Problem</h2>
+
+  <p class="mb-6">
+    Here's the thing about expanded content: it doesn't vanish after the recipient compresses it. It stays. Search indices. Vector databases. Email archives. Git history. Documentation sites. Every expanded message becomes permanent pollution.
+  </p>
+
+  <p class="mb-6">
+    Imagine if every time you spoke, someone recorded it, transcribed it, expanded the transcription to 10× length, archived all versions, and made them all searchable. Now imagine trying to find anything in that archive.
+  </p>
+
+  <p class="mb-6">
+    That's what's happening. Google search accuracy dropped 10% in the past year. AI content now comprises ~20% of results. When you search, click-through rates fall 47% because the AI summary is good enough - but finding the actual source takes longer. Zero-click searches went from 56% to 69% in twelve months.
+  </p>
+
+  <p class="mb-6">
+    We built tools to save time. Then filled every database with verbose copies of the same information, making search slower for everyone.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Scale</h2>
+
+  <p class="mb-6">
+    One message? Negligible. Billions daily? The numbers get interesting. The calculator below uses rough estimates - not rigorous calculations, just enough to get a feel for the magnitude:
+  </p>
+
+  <GlobalImpactCalculator client:load />
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">What Now?</h2>
+
+  <p class="mb-6">
+    We've optimized each node while degrading the network. Every individual saves time. Every database fills with noise. Search gets slower. Storage gets more expensive. The energy meters spin faster. And we keep expanding because stopping means falling behind.
+  </p>
+
+  <p class="mb-6">
+    The technical fixes exist. Transmit intent, not verbosity. Let the recipient's AI render politeness client-side, matched to their culture and preferences. Store the compressed version. Tag AI-generated content so search engines can filter it. Build compression-first workflows instead of expansion-first ones. None of this is hard to imagine.
+  </p>
+
+  <p class="mb-6">
+    But here's the trap: those solutions require coordination. Someone has to build the protocol. Everyone has to adopt it. Search engines have to respect the tags. Email clients have to render intent identically. And right now, every individual's incentives point the other direction - expand your message, let someone else deal with compression.
+  </p>
+
+  <p class="mb-6">
+    Which raises harder questions. When professional tone became free, did the signal collapse? The pollution's already in the indices - can we clean it out, or is search permanently degraded? The energy costs compound with scale - at what point does the math force change? And most importantly, who profits from this?
+  </p>
+
+  <p class="mb-6">
+    Maybe we're watching a market failure play out in real time. Individually rational. Collectively wasteful. Familiar pattern.
+  </p>
+
+  <p class="mb-6 text-sm text-muted-foreground italic">
+    (Irony: this article was written with LLM assistance. I expanded my notes, you're reading the result. Whether you compress it back is up to you.)
+  </p>
+
+  <div slot="references">
+    <h2 class="text-2xl font-bold mt-8 mb-4">References</h2>
+
+    <div class="text-xs space-y-2 text-muted-foreground">
+      <p>1. Frontiers in Communication (2025). "Energy costs of communicating with AI".</p>
+      <p>2. arXiv 2505.09598v1 (2025). "How Hungry is AI? Benchmarking Energy, Water, and Carbon Footprint of LLM Inference".</p>
+      <p>3. Originality.ai (2025). "Amount of AI Content in Google Search Results - Ongoing Study".</p>
+      <p>4. Webis (2024). "Is Google Getting Worse? A Longitudinal Investigation of SEO Spam in Search Engines".</p>
+      <p>5. Pew Research Center (2025). Study tracking 68,000 search queries and AI summary click-through impact.</p>
+      <p>6. arXiv 2409.17383v1 (2024). "VectorSearch: Enhancing Document Retrieval with Semantic Embeddings and Optimized Search".</p>
+      <p>7. Circuit.ai (2024). "The Generative AI Productivity Paradox: Overcoming Information Overload at Work".</p>
+      <p>8. Atlassian. "State of Teams Report".</p>
+    </div>
+  </div>
+</BlogPostLayout>
