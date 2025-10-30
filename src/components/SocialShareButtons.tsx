@@ -11,6 +11,13 @@ export function SocialShareButtons({ title, description, url }: SocialShareButto
   const encodedTitle = encodeURIComponent(title);
   const encodedText = encodeURIComponent(`${title} - ${description}`);
 
+  const handleShareClick = (platform: string) => {
+    // Track share button click with Plausible
+    if (typeof window !== 'undefined' && (window as any).plausible) {
+      (window as any).plausible('Share Click', { props: { platform } });
+    }
+  };
+
   const shareLinks = [
     {
       name: 'Twitter',
@@ -61,6 +68,7 @@ export function SocialShareButtons({ title, description, url }: SocialShareButto
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Share on ${name}`}
+            onClick={() => handleShareClick(name)}
             className={`flex items-center justify-center w-10 h-10 rounded-full border border-border bg-background text-muted-foreground transition-colors ${color} hover:border-current`}
           >
             <Icon className="w-5 h-5" />
