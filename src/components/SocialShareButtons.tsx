@@ -4,12 +4,16 @@ interface SocialShareButtonsProps {
   title: string;
   description: string;
   url: string;
+  shareMessage?: string;
 }
 
-export function SocialShareButtons({ title, description, url }: SocialShareButtonsProps) {
+export function SocialShareButtons({ title, description, url, shareMessage }: SocialShareButtonsProps) {
   const encodedUrl = encodeURIComponent(url);
   const encodedTitle = encodeURIComponent(title);
-  const encodedText = encodeURIComponent(`${title} - ${description}`);
+  // Use custom share message if provided, otherwise fall back to title
+  const shareText = shareMessage || title;
+  const encodedShareText = encodeURIComponent(shareText);
+  const encodedText = encodeURIComponent(`${shareText} ${url}`);
 
   const handleShareClick = (platform: string) => {
     // Track share button click with Plausible
@@ -22,7 +26,7 @@ export function SocialShareButtons({ title, description, url }: SocialShareButto
     {
       name: 'Twitter',
       icon: FaTwitter,
-      url: `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
+      url: `https://twitter.com/intent/tweet?text=${encodedShareText}&url=${encodedUrl}`,
       color: 'hover:text-[#1DA1F2]',
     },
     {
@@ -40,19 +44,19 @@ export function SocialShareButtons({ title, description, url }: SocialShareButto
     {
       name: 'Reddit',
       icon: FaReddit,
-      url: `https://reddit.com/submit?url=${encodedUrl}&title=${encodedTitle}`,
+      url: `https://reddit.com/submit?url=${encodedUrl}&title=${encodedShareText}`,
       color: 'hover:text-[#FF4500]',
     },
     {
       name: 'Telegram',
       icon: FaTelegram,
-      url: `https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`,
+      url: `https://t.me/share/url?url=${encodedUrl}&text=${encodedShareText}`,
       color: 'hover:text-[#26A5E4]',
     },
     {
       name: 'WhatsApp',
       icon: FaWhatsapp,
-      url: `https://wa.me/?text=${encodedText} ${encodedUrl}`,
+      url: `https://wa.me/?text=${encodedText}`,
       color: 'hover:text-[#25D366]',
     },
   ];
