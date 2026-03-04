@@ -7,7 +7,7 @@ description: Linting conventions. Use when running or configuring linting.
 
 ## Overview
 
-Pre-commit based linting for code quality and consistency.
+Pre-commit-based linting for code quality and consistency.
 
 ## When to Use
 

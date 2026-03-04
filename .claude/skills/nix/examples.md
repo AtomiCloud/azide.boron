@@ -99,7 +99,6 @@ stable = with pkgs-stable; {
 {
   database = pkgs.mkShell {
     buildInputs = system ++ database;
-    inherit shellHook;
     shellHook = ''
       ${checks.pre-commit-check.shellHook}
       echo "Database development environment"

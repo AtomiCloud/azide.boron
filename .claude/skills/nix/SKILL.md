@@ -49,7 +49,7 @@ All detailed information is in the Nix documentation:
 
 ### Step 3: File Structure Overview
 
-```
+```text
 nix/
 ├── packages.nix   # Aggregate packages from registries
 ├── env.nix        # Group packages: system, dev, main, lint, releaser
@@ -138,7 +138,8 @@ use flake
 
 # Add to PATH (canonical way - prevents accidentally replacing PATH)
 PATH_add bin                        # Add ./bin to PATH
-PATH_add ${packages.my-tool}/bin    # Add package binary to PATH
+# Binaries from `use flake` are already on PATH.
+# Use PATH_add for non-Nix/local paths only:
 PATH_add /custom/path               # Add absolute path to PATH
 
 # Export environment variables

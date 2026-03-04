@@ -4,7 +4,7 @@ Complete technical reference for the modular Nix flake architecture using the ni
 
 ## File Structure
 
-```
+```text
 nix/
 ├── packages.nix   # Package aggregation from registries
 ├── env.nix        # Environment group definitions
@@ -62,7 +62,7 @@ flake.nix          # Main flake configuration
         # Import modules
         packages = import ./nix/packages.nix { inherit pkgs; };
         env = import ./nix/env.nix { inherit packages; };
-        shells = import ./nix/shells.nix { inherit pkgs env; };
+        devShells = import ./nix/shells.nix { inherit pkgs env; };
         formatter = import ./nix/fmt.nix { inherit treefmt-nix pkgs; };
         pre-commit = import ./nix/pre-commit.nix { inherit packages formatter pre-commit-hooks; };
       in
