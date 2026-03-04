@@ -1,3 +1,22 @@
+## [1.3.0](https://github.com/AtomiCloud/azide.boron/compare/v1.2.0...v1.3.0) (2026-03-04)
+
+
+### ✨ Features ✨
+
+* add dependency upgrade plans for CU-86ewu121x ([6b7eb07](https://github.com/AtomiCloud/azide.boron/commit/6b7eb07a2541bf0bb974c540c8aaa7c7fdb4b593))
+* **deps:** upgrade all dependencies for CU-86ewu121x ([bdc43be](https://github.com/AtomiCloud/azide.boron/commit/bdc43be2343209a8f89ad65e3eb5888c4723a48f))
+
+
+### 🐛 Bug Fixes 🐛
+
+* address coderabbit local review findings ([15851f6](https://github.com/AtomiCloud/azide.boron/commit/15851f60e407f96b85f5f4f35f38309cdd8a2045))
+* address CodeRabbit review feedback and DeepSource config ([d3e554f](https://github.com/AtomiCloud/azide.boron/commit/d3e554f5c86e7df9a7a4ad56a44d8c85ec1940fb))
+
+
+### 🔼 Dependency Upstreams 🔼
+
+* cyan update ([bc5232e](https://github.com/AtomiCloud/azide.boron/commit/bc5232ede186a8029d3c51f2cb39f87671b4e956))
+
 ## [1.2.0](https://github.com/AtomiCloud/azide.boron/compare/v1.1.0...v1.2.0) (2026-03-04)
 
 
