@@ -1,3 +1,10 @@
+## [1.2.0](https://github.com/AtomiCloud/azide.boron/compare/v1.1.0...v1.2.0) (2026-03-04)
+
+
+### ✨ Features ✨
+
+* custom share message ([291f5ad](https://github.com/AtomiCloud/azide.boron/commit/291f5ad4e7e00db09d9b3aa86b4bd477f42ce340))
+
 ## [1.1.0](https://github.com/AtomiCloud/azide.boron/compare/v1.0.0...v1.1.0) (2025-10-30)
 
 
