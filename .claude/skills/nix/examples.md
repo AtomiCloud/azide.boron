@@ -350,29 +350,26 @@ hooks = {
 ### System-Specific Packages
 
 ```nix
-// nix/packages.nix
+# nix/packages.nix
 { pkgs, pkgs-stable, pkgs-unstable, custom-registry, system }:
 let
-  all = {
-    stable = with pkgs-stable; {
-      inherit git nodejs;
-    };
+  stable = with pkgs-stable; {
+    inherit git nodejs;
+  };
 
-    // macOS-only
-    darwin = with pkgs; {
-      inherit cocoapods;
-    };
+  # macOS-only
+  darwin = with pkgs; {
+    inherit cocoapods;
+  };
 
-    // Linux-only
-    linux = with pkgs; {
-      inherit systemd;
-    };
+  # Linux-only
+  linux = with pkgs; {
+    inherit systemd;
   };
 in
-with all;
-stable ++
-(if pkgs.system == "aarch64-darwin" || pkgs.system == "x86_64-darwin" then darwin else []) ++
-(if pkgs.system == "x86_64-linux" then linux else [])
+stable //
+(if pkgs.stdenv.isDarwin then darwin else {}) //
+(if pkgs.stdenv.isLinux then linux else {})
 ```
 
 ### Feature-Flagged Packages
