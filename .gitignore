@@ -275,7 +275,6 @@ $RECYCLE.BIN/
 
 ### macOS template
 # General
-.DS_Store
 .AppleDouble
 .LSOverride
 
@@ -302,7 +301,6 @@ Temporary Items
 .apdisk
 
 
-.pre-commit-config.yaml
 .wrangler
 
 # PWA generated assets (auto-generated from source logo.svg)
@@ -312,3 +310,7 @@ public/maskable-icon-512x512.png
 public/pwa-192x192.png
 public/pwa-512x512.png
 public/pwa-64x64.png
+.kagent/
+.pre-commit-config.yaml
+.DS_Store
+.idea

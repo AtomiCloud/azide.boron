@@ -66,17 +66,14 @@ Create a **baity but neutral** share message that hooks readers while maintainin
 **Hook Techniques (Neutral Style):**
 
 1. **Question Hook**: Pose an intriguing question
-
    - "Why does [common thing] actually work differently than you think?"
    - "What if [assumption] is backwards?"
 
 2. **Contrast Hook**: Present an unexpected contrast
-
    - "The counterintuitive way [outcome] actually happens"
    - "[Common approach] vs what actually works"
 
 3. **Surprising Insight**: Tease a non-obvious realization
-
    - "The overlooked factor in [topic]"
    - "What most people miss about [topic]"
 

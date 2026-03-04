@@ -1,4 +1,8 @@
-{ packages, formatter, pre-commit-lib }:
+{ packages
+, formatter
+, pre-commit-lib
+,
+}:
 pre-commit-lib.run {
   src = ./.;
 
@@ -16,7 +20,7 @@ pre-commit-lib.run {
     # linters From https://github.com/cachix/pre-commit-hooks.nix
     shellcheck.enable = false;
 
-    # custom precommits 
+    # custom precommits
     a-biome = {
       enable = true;
       name = "Biome Lint";
@@ -25,7 +29,6 @@ pre-commit-lib.run {
       language = "system";
       pass_filenames = true;
     };
-
 
     # Frontend linting hooks (now at root level)
     a-frontend-tsc = {
@@ -92,10 +95,6 @@ pre-commit-lib.run {
       language = "system";
       pass_filenames = true;
     };
-
-    /*
-      
-    */
 
   };
 }
