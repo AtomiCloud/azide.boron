@@ -46,10 +46,64 @@ Help craft:
 - **Description**: Clear summary (120-160 characters)
 - **Topic**: tech | marketing | entrepreneurship | productivity | health
 - **Tags**: 3-5 relevant tags (lowercase, hyphenated)
+- **Share Message**: A baity but neutral hook (50-100 characters) that creates curiosity without hype - use questions, contrasts, or surprising insights
 
 **Important**: Once title is decided, ask:
 
 > "Please provide a URL to a cover image for this blog post. This will be displayed on the homepage card."
+
+### Share Message Guidelines
+
+Create a **baity but neutral** share message that hooks readers while maintaining a conversational tone:
+
+- **Include a hook or curiosity gap** that makes people want to click
+- **Sounds natural**, like you're casually sharing something intriguing with a friend
+- **Teases the insight** without giving it away completely
+- **Stays neutral in tone** - no excessive enthusiasm or hyperbole
+- **Is concise** (50-100 characters)
+- **Uses questions, contrasts, or surprising elements** to create interest
+
+**Hook Techniques (Neutral Style):**
+
+1. **Question Hook**: Pose an intriguing question
+
+   - "Why does [common thing] actually work differently than you think?"
+   - "What if [assumption] is backwards?"
+
+2. **Contrast Hook**: Present an unexpected contrast
+
+   - "The counterintuitive way [outcome] actually happens"
+   - "[Common approach] vs what actually works"
+
+3. **Surprising Insight**: Tease a non-obvious realization
+
+   - "The overlooked factor in [topic]"
+   - "What most people miss about [topic]"
+
+4. **Problem/Solution Tease**: Hint at solving a pain point
+   - "A different angle on [common problem]"
+   - "Rethinking [topic] from first principles"
+
+**Good Examples (Baity + Neutral):**
+
+- "Why [common thing] might not work the way you think"
+- "The surprising connection between [A] and [B]"
+- "What I learned after [doing X]"
+- "A counterintuitive take on [topic]"
+- "[Topic]: the part most people overlook"
+- "Rethinking how we approach [topic]"
+- "The hidden tradeoff in [common practice]"
+- "Why [assumption] doesn't hold up"
+
+**Bad Examples:**
+
+- ❌ "Amazing article about [topic] - must read!" (too enthusiastic)
+- ❌ "This will blow your mind!" (overly hyped)
+- ❌ "The ultimate guide to [topic]!" (generic clickbait)
+- ❌ "[Topic] explained (you won't believe #3!)" (cheap clickbait)
+- ❌ "SHOCKING truth about [topic]" (excessive caps/drama)
+
+**The Goal**: Create curiosity and interest without sounding like a used car salesman. Think "hmm, that's interesting" rather than "OMG YOU NEED TO READ THIS!!!"
 
 ### Step 4: Get Author Info
 
@@ -85,6 +139,7 @@ export const frontmatter = {
   topic: 'tech' as const,
   tags: ['tag1', 'tag2', 'tag3'],
   coverImage: 'https://example.com/image.jpg',
+  shareMessage: 'Why [topic] might not work the way you think',
 };
 
 const post = getBlogPost('post-slug')!;
