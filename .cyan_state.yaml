@@ -7,21 +7,43 @@ atomi/workspace:
         atomi/workspace/service:
           type: String
           value: boron
+        atomi/workspace/runtime:
+          type: String
+          value: Bun
         atomi/workspace/enable-docker:
+          type: Bool
+          value: false
+        atomi/workspace/platform:
+          type: String
+          value: azide
+        atomi/workspace/enable-secret:
           type: Bool
           value: false
         atomi/workspace/enable-helm:
           type: Bool
           value: false
-        atomi/workspace/enable-secret:
+      deterministic_states: {}
+    - version: 33
+      time: 2026-03-04T06:05:32.348606Z
+      answers:
+        atomi/workspace/platform:
+          type: String
+          value: azide
+        atomi/workspace/enable-docker:
           type: Bool
           value: false
         atomi/workspace/runtime:
           type: String
           value: Bun
-        atomi/workspace/platform:
+        atomi/workspace/enable-secret:
+          type: Bool
+          value: false
+        atomi/workspace/service:
           type: String
-          value: azide
+          value: boron
+        atomi/workspace/enable-helm:
+          type: Bool
+          value: false
       deterministic_states: {}
 atomi/nix-init:
   active: true
@@ -29,18 +51,37 @@ atomi/nix-init:
     - version: 14
       time: 2025-10-24T02:29:16.262040Z
       answers:
-        service:
-          type: String
-          value: boron
         runtime:
           type: String
           value: Bun
-        infra:
-          type: Bool
-          value: false
+        service:
+          type: String
+          value: boron
         platform:
           type: String
           value: azide
+        infra:
+          type: Bool
+          value: false
+        init-type:
+          type: String
+          value: AtomiCloud Suite
+      deterministic_states: {}
+    - version: 28
+      time: 2026-03-04T06:04:18.281264Z
+      answers:
+        platform:
+          type: String
+          value: azide
+        runtime:
+          type: String
+          value: Bun
+        service:
+          type: String
+          value: boron
+        infra:
+          type: Bool
+          value: false
         init-type:
           type: String
           value: AtomiCloud Suite

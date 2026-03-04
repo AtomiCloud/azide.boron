@@ -59,3 +59,6 @@ tasks:
       Tag: Optional release tag to include in description
     cmds:
       - ./scripts/ci/upload.sh {{.CLI_ARGS}} deploy "local-$(openssl rand -hex 3)"
+      #
+      #
+  #

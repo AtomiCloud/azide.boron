@@ -341,7 +341,6 @@ When creating or modifying components, always ensure they work in both themes by
    ```
 
 2. **Using semantic color tokens from the theme:**
-
    - `background`, `foreground` - Main background and text
    - `card`, `card-foreground` - Card backgrounds
    - `primary`, `primary-foreground` - Primary brand colors
