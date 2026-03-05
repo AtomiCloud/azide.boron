@@ -8,19 +8,8 @@ name = "javascript"
 enabled = true
 
   [analyzers.meta]
-  runtime = "nodejs"
   dialect = "typescript"
-
-[[analyzers]]
-name = "typescript"
-enabled = true
-
-  [analyzers.meta]
-  tsconfig_path = "tsconfig.json"
 
 [[analyzers]]
 name = "test-coverage"
 enabled = true
-
-  [analyzers.meta]
-  language = "javascript"
