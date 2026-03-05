@@ -52,16 +52,18 @@ site:
   author: 'Azide Boron Team'
 
 social:
-  twitter: 'https://twitter.com/azideboron'
-  github: 'https://github.com/azideboron'
-  discord: 'https://discord.gg/azideboron'
-  youtube: 'https://youtube.com/@azideboron'
-  tiktok: 'https://tiktok.com/@azideboron'
-  linkedin: 'https://linkedin.com/company/azideboron'
-  instagram: 'https://instagram.com/azideboron'
-  telegram: 'https://t.me/azideboron'
-  email: 'hello@azideboron.com'
-  whatsapp: '1234567890'
+  twitter: ''
+  github: ''
+  discord: ''
+  youtube: ''
+  tiktok: ''
+  linkedin: ''
+  instagram: ''
+  telegram: ''
+  email: ''
+  whatsapp: ''
+  bluesky: ''
+  reddit: ''
 
 legal:
   contactEmail: 'legal@azideboron.com'
