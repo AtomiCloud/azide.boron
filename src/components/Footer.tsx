@@ -53,45 +53,47 @@ export function Footer({ config }: FooterProps) {
   });
 
   return (
-    <footer className="mt-auto border-t border-border bg-background relative z-20">
-      <div className="container mx-auto px-6 py-8 max-w-4xl flex flex-col items-center gap-6">
-        {/* Links */}
-        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
-          <a href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-            Home
-          </a>
-          <span className="text-muted-foreground">•</span>
-          <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
-            About
-          </a>
-          <span className="text-muted-foreground">•</span>
-          <a href="/legal" className="text-muted-foreground hover:text-foreground transition-colors">
-            Legal
-          </a>
-        </nav>
-
-        {/* Social Links */}
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          {socialLinks.map(({ name, icon: Icon, url }) => (
-            <a
-              key={name}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground transition-colors hover:text-primary"
-              aria-label={name}
-              title={name}
-            >
-              <Icon className="h-5 w-5" />
-            </a>
-          ))}
-        </div>
-
-        {/* Copyright */}
-        <p className="text-xs text-muted-foreground text-center">
-          &copy; {currentYear} {config.app.name}. All rights reserved.
-        </p>
+    <footer className="mt-auto border-t border-border bg-background relative z-20 container mx-auto px-6 py-8 max-w-4xl flex flex-col items-center gap-6">
+      {/* Links - use div instead of nav to reduce nesting */}
+      <div
+        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm"
+        role="navigation"
+        aria-label="Footer navigation"
+      >
+        <a href="/" className="text-muted-foreground hover:text-foreground transition-colors">
+          Home
+        </a>
+        <span className="text-muted-foreground">•</span>
+        <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
+          About
+        </a>
+        <span className="text-muted-foreground">•</span>
+        <a href="/legal" className="text-muted-foreground hover:text-foreground transition-colors">
+          Legal
+        </a>
       </div>
+
+      {/* Social Links */}
+      <div className="flex flex-wrap items-center justify-center gap-4">
+        {socialLinks.map(({ name, icon: Icon, url }) => (
+          <a
+            key={name}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground transition-colors hover:text-primary"
+            aria-label={name}
+            title={name}
+          >
+            <Icon className="h-5 w-5" />
+          </a>
+        ))}
+      </div>
+
+      {/* Copyright */}
+      <p className="text-xs text-muted-foreground text-center">
+        &copy; {currentYear} {config.app.name}. All rights reserved.
+      </p>
     </footer>
   );
 }
