@@ -58,16 +58,18 @@ export interface Config {
     author: string;
   };
   social: {
-    twitter: string;
-    github: string;
-    discord: string;
-    youtube: string;
-    tiktok: string;
-    linkedin: string;
-    instagram: string;
-    telegram: string;
-    email: string;
-    whatsapp: string;
+    twitter?: string;
+    github?: string;
+    discord?: string;
+    youtube?: string;
+    tiktok?: string;
+    linkedin?: string;
+    instagram?: string;
+    telegram?: string;
+    email?: string;
+    whatsapp?: string;
+    bluesky?: string;
+    reddit?: string;
   };
   legal: {
     contactEmail: string;

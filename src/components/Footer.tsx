@@ -11,6 +11,8 @@ import {
   FaTelegram,
   FaEnvelope,
   FaWhatsapp,
+  FaBluesky,
+  FaReddit,
 } from 'react-icons/fa6';
 
 interface FooterProps {
@@ -20,22 +22,30 @@ interface FooterProps {
 export function Footer({ config }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
+  // Build array of all possible social platforms with their icons and URL generators
+  // Filter to only include items where the social platform has a non-empty value
   const socialLinks = [
-    { name: 'GitHub', icon: FaGithub, url: config.social.github || '#' },
-    { name: 'Twitter', icon: FaTwitter, url: config.social.twitter || '#' },
-    { name: 'Discord', icon: FaDiscord, url: config.social.discord || '#' },
-    { name: 'YouTube', icon: FaYoutube, url: config.social.youtube || '#' },
-    { name: 'TikTok', icon: FaTiktok, url: config.social.tiktok || '#' },
-    { name: 'LinkedIn', icon: FaLinkedin, url: config.social.linkedin || '#' },
-    { name: 'Instagram', icon: FaInstagram, url: config.social.instagram || '#' },
-    { name: 'Telegram', icon: FaTelegram, url: config.social.telegram || '#' },
-    { name: 'Email', icon: FaEnvelope, url: config.social.email ? `mailto:${config.social.email}` : '#' },
+    { name: 'GitHub', icon: FaGithub, url: config.social?.github },
+    { name: 'Twitter', icon: FaTwitter, url: config.social?.twitter },
+    { name: 'Discord', icon: FaDiscord, url: config.social?.discord },
+    { name: 'YouTube', icon: FaYoutube, url: config.social?.youtube },
+    { name: 'TikTok', icon: FaTiktok, url: config.social?.tiktok },
+    { name: 'LinkedIn', icon: FaLinkedin, url: config.social?.linkedin },
+    { name: 'Instagram', icon: FaInstagram, url: config.social?.instagram },
+    { name: 'Telegram', icon: FaTelegram, url: config.social?.telegram },
+    { name: 'Bluesky', icon: FaBluesky, url: config.social?.bluesky },
+    { name: 'Reddit', icon: FaReddit, url: config.social?.reddit },
+    {
+      name: 'Email',
+      icon: FaEnvelope,
+      url: config.social?.email ? `mailto:${config.social.email}` : undefined,
+    },
     {
       name: 'WhatsApp',
       icon: FaWhatsapp,
-      url: config.social.whatsapp ? `https://wa.me/${config.social.whatsapp}` : '#',
+      url: config.social?.whatsapp ? `https://wa.me/${config.social.whatsapp}` : undefined,
     },
-  ];
+  ].filter(link => link.url && link.url !== '#');
 
   return (
     <footer className="mt-auto border-t border-border bg-background relative z-20">
