@@ -21,7 +21,7 @@ interface FooterProps {
 export function Footer({ config }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
-  // Pre-process WhatsApp number to strip non-digits
+  // Normalize WhatsApp number by removing all non-digit characters
   const whatsappNumber = config.social?.whatsapp?.replace(/\D/g, '');
 
   // Build array of all possible social platforms with their icons and URL generators
