@@ -18,5 +18,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           timeout: 1200
           # Exclude DeepSource checks from the gatekeeper
-          filters: |
-            !^DeepSource
+          ignored: DeepSource
