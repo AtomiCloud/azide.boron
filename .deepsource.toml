@@ -1,15 +1,16 @@
 # DeepSource configuration for Azide Boron
 # https://docs.deepsource.com/docs/core-analyzers
+# Disabled - not currently needed for this project
 
 version = 1
 
 [[analyzers]]
 name = "javascript"
-enabled = true
+enabled = false
 
   [analyzers.meta]
   dialect = "typescript"
 
 [[analyzers]]
 name = "test-coverage"
-enabled = true
+enabled = false

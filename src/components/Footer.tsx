@@ -18,6 +18,27 @@ interface FooterProps {
   config: Config;
 }
 
+interface SocialLinkProps {
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+  url: string;
+}
+
+function SocialLink({ name, icon: Icon, url }: SocialLinkProps) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-muted-foreground transition-colors hover:text-primary"
+      aria-label={name}
+      title={name}
+    >
+      <Icon className="h-5 w-5" />
+    </a>
+  );
+}
+
 export function Footer({ config }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
@@ -25,7 +46,7 @@ export function Footer({ config }: FooterProps) {
   const whatsappNumber = config.social?.whatsapp?.replace(/\D/g, '');
 
   // Build array of all possible social platforms with their icons and URL generators
-  // Filter to only include items where the social platform has a non-empty value
+  // Sanitize URLs by trimming, then filter to only include non-empty values
   const socialLinks = [
     { name: 'GitHub', icon: FaGithub, url: config.social?.github },
     { name: 'Twitter', icon: FaTwitter, url: config.social?.twitter },
@@ -47,10 +68,13 @@ export function Footer({ config }: FooterProps) {
       icon: FaWhatsapp,
       url: whatsappNumber ? `https://wa.me/${whatsappNumber}` : undefined,
     },
-  ].filter(link => {
-    const url = link.url?.trim();
-    return Boolean(url && url !== '#');
-  });
+  ]
+    .map(link => ({ ...link, url: link.url?.trim() }))
+    .filter(link => Boolean(link.url && link.url !== '#')) as Array<{
+    name: string;
+    icon: React.ComponentType<{ className?: string }>;
+    url: string;
+  }>;
 
   return (
     <footer className="mt-auto border-t border-border bg-background relative z-20 container mx-auto px-6 py-8 max-w-4xl flex flex-col items-center gap-6">
@@ -75,18 +99,8 @@ export function Footer({ config }: FooterProps) {
 
       {/* Social Links */}
       <div className="flex flex-wrap items-center justify-center gap-4">
-        {socialLinks.map(({ name, icon: Icon, url }) => (
-          <a
-            key={name}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground transition-colors hover:text-primary"
-            aria-label={name}
-            title={name}
-          >
-            <Icon className="h-5 w-5" />
-          </a>
+        {socialLinks.map(({ name, icon, url }) => (
+          <SocialLink key={name} name={name} icon={icon} url={url} />
         ))}
       </div>
 
