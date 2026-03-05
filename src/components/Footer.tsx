@@ -21,6 +21,9 @@ interface FooterProps {
 export function Footer({ config }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
+  // Pre-process WhatsApp number to strip non-digits
+  const whatsappNumber = config.social?.whatsapp?.replace(/\D/g, '');
+
   // Build array of all possible social platforms with their icons and URL generators
   // Filter to only include items where the social platform has a non-empty value
   const socialLinks = [
@@ -42,9 +45,12 @@ export function Footer({ config }: FooterProps) {
     {
       name: 'WhatsApp',
       icon: FaWhatsapp,
-      url: config.social?.whatsapp ? `https://wa.me/${config.social.whatsapp.replace(/\D/g, '').trim()}` : undefined,
+      url: whatsappNumber ? `https://wa.me/${whatsappNumber}` : undefined,
     },
-  ].filter(link => link.url && link.url !== '#');
+  ].filter(link => {
+    const url = link.url?.trim();
+    return Boolean(url && url !== '#');
+  });
 
   return (
     <footer className="mt-auto border-t border-border bg-background relative z-20">
