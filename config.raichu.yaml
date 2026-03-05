@@ -16,7 +16,11 @@ site:
   url: 'https://blog.atomi.cloud'
   author: 'AtomiCloud Team'
 
-social: {}
+social:
+  linkedin: 'https://www.linkedin.com/company/atomicloud/'
+  email: 'hello@atomi.cloud'
+  bluesky: 'https://bsky.app/profile/atomicloud.bsky.social'
+  reddit: 'https://www.reddit.com/user/AtomiCloudOfficial/'
 
 legal:
   contactEmail: 'admin@atomi.cloud'

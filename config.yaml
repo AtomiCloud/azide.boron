@@ -57,13 +57,13 @@ social:
   discord: ''
   youtube: ''
   tiktok: ''
-  linkedin: 'https://www.linkedin.com/company/atomicloud/'
+  linkedin: ''
   instagram: ''
   telegram: ''
-  email: 'hello@atomi.cloud'
+  email: ''
   whatsapp: ''
-  bluesky: 'https://bsky.app/profile/atomicloud.bsky.social'
-  reddit: 'https://www.reddit.com/user/AtomiCloudOfficial/'
+  bluesky: ''
+  reddit: ''
 
 legal:
   contactEmail: 'legal@azideboron.com'
