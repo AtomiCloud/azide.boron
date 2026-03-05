@@ -1,3 +1,24 @@
+## [1.4.0](https://github.com/AtomiCloud/azide.boron/compare/v1.3.0...v1.4.0) (2026-03-05)
+
+
+### 📜 Documentation 📜
+
+* add implementation plans for CU-86ewu0ya9 v1 ([fff00f3](https://github.com/AtomiCloud/azide.boron/commit/fff00f386aefcfcbc2e153d1df50f683da2fbd0e))
+* add task spec for CU-86ewu0ya9 ([78a330d](https://github.com/AtomiCloud/azide.boron/commit/78a330dc9d4c2c139d918e7e59cc1e3f887ce9a4))
+
+
+### ✨ Features ✨
+
+* **footer:** dynamic social links with Bluesky & Reddit support ([bc3a1f7](https://github.com/AtomiCloud/azide.boron/commit/bc3a1f7f610c890d8dd72e6c364da0f0ca26159f))
+
+
+### 🐛 Bug Fixes 🐛
+
+* address CodeRabbit feedback on WhatsApp normalization ([8961f38](https://github.com/AtomiCloud/azide.boron/commit/8961f38e2ed135fcf5906cbde435a473948619a5))
+* address review feedback - JSX nesting and WhatsApp normalization ([dda2d03](https://github.com/AtomiCloud/azide.boron/commit/dda2d03015bfe0cfa02bb0cfdfb31ecb8d77f15e))
+* disable DeepSource and improve Footer URL handling ([d4e47bb](https://github.com/AtomiCloud/azide.boron/commit/d4e47bb28c7eadaa36925261e69f2d1e7e38ed4c))
+* reduce JSX nesting depth to satisfy DeepSource ([e865b12](https://github.com/AtomiCloud/azide.boron/commit/e865b12e34ff79a54a72d3a70736253b4595b375))
+
 ## [1.3.0](https://github.com/AtomiCloud/azide.boron/compare/v1.2.0...v1.3.0) (2026-03-04)
 
 
