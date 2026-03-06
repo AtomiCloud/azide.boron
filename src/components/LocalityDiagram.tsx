@@ -1,29 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { cn } from '../lib/utils';
+import React from 'react';
 
 export default function LocalityDiagram() {
-  const [isVisible, setIsVisible] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        const entry = entries[0];
-        if (entry?.isIntersecting && !isVisible) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.3 },
-    );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [isVisible]);
-
-  // Generate fixed positions for dots (deterministic for consistency)
+  // Generate fixed positions for dots
   const globalDots = [
     { x: 15, y: 20 },
     { x: 45, y: 15 },
@@ -59,14 +37,14 @@ export default function LocalityDiagram() {
   ];
 
   return (
-    <div ref={containerRef} className="my-8 md:my-12">
+    <div className="my-8 md:my-12">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         {/* Left Panel: Without Locality (Global) */}
         <div className="border border-destructive/30 rounded-lg p-4 bg-destructive/5">
           <div className="text-center mb-3 text-sm font-semibold text-destructive">Without Locality (Global)</div>
 
           <div className="relative aspect-square w-full max-w-[280px] mx-auto bg-muted/30 rounded border border-border overflow-hidden">
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
               {/* Connection lines - all interconnected */}
               {globalDots.map((dot, i) =>
                 globalDots
@@ -78,11 +56,8 @@ export default function LocalityDiagram() {
                       y1={dot.y}
                       x2={otherDot.x}
                       y2={otherDot.y}
-                      className={cn(
-                        'transition-all duration-500',
-                        isVisible ? 'stroke-destructive/40 animate-global-cascade' : 'stroke-muted-foreground/20',
-                      )}
-                      style={{ animationDelay: `${(i + j) * 0.05}s` }}
+                      stroke="hsl(var(--destructive))"
+                      strokeOpacity="0.3"
                       strokeWidth="0.3"
                     />
                   )),
@@ -90,26 +65,24 @@ export default function LocalityDiagram() {
 
               {/* Dots */}
               {globalDots.map((dot, i) => (
-                <g key={i}>
-                  <circle
-                    cx={dot.x}
-                    cy={dot.y}
-                    r="3"
-                    className={cn(
-                      'transition-all duration-300',
-                      i === 7
-                        ? 'fill-primary'
-                        : isVisible
-                          ? 'fill-destructive/80 animate-pulse'
-                          : 'fill-muted-foreground/40',
-                    )}
-                    style={{ animationDelay: `${i * 0.1}s` }}
-                  />
-                  {i === 7 && (
-                    <circle cx={dot.x} cy={dot.y} r="5" className="fill-none stroke-primary stroke-2 animate-ping" />
-                  )}
-                </g>
+                <circle
+                  key={i}
+                  cx={dot.x}
+                  cy={dot.y}
+                  r={i === 7 ? 4 : 3}
+                  fill={i === 7 ? 'hsl(var(--primary))' : 'hsl(var(--destructive) / 0.7)'}
+                />
               ))}
+
+              {/* Highlight ring on dot of interest */}
+              <circle
+                cx={globalDots[7]!.x}
+                cy={globalDots[7]!.y}
+                r="6"
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="1.5"
+              />
             </svg>
 
             {/* Label */}
@@ -128,14 +101,15 @@ export default function LocalityDiagram() {
           <div className="text-center mb-3 text-sm font-semibold text-primary">With Locality (Field Abstraction)</div>
 
           <div className="relative aspect-square w-full max-w-[280px] mx-auto bg-muted/30 rounded border border-border overflow-hidden">
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
               {/* Boundary box */}
               <rect
                 x="25"
                 y="30"
                 width="50"
                 height="45"
-                className="fill-primary/10 stroke-primary/50"
+                fill="hsl(var(--primary) / 0.1)"
+                stroke="hsl(var(--primary) / 0.5)"
                 strokeWidth="1.5"
                 strokeDasharray="4 2"
                 rx="4"
@@ -143,7 +117,7 @@ export default function LocalityDiagram() {
 
               {/* Outside dots - faded */}
               {localOutsideDots.map((dot, i) => (
-                <circle key={`outside-${i}`} cx={dot.x} cy={dot.y} r="2.5" className="fill-muted-foreground/20" />
+                <circle key={`outside-${i}`} cx={dot.x} cy={dot.y} r="2.5" fill="hsl(var(--muted-foreground) / 0.2)" />
               ))}
 
               {/* Inside connection lines */}
@@ -157,10 +131,8 @@ export default function LocalityDiagram() {
                       y1={dot.y}
                       x2={otherDot.x}
                       y2={otherDot.y}
-                      className={cn(
-                        'transition-all duration-500',
-                        isVisible ? 'stroke-primary/60' : 'stroke-muted-foreground/20',
-                      )}
+                      stroke="hsl(var(--primary))"
+                      strokeOpacity="0.5"
                       strokeWidth="0.5"
                     />
                   )),
@@ -168,26 +140,29 @@ export default function LocalityDiagram() {
 
               {/* Inside dots */}
               {localInsideDots.map((dot, i) => (
-                <g key={`inside-dot-${i}`}>
-                  <circle
-                    cx={dot.x}
-                    cy={dot.y}
-                    r="3"
-                    className={cn(
-                      'transition-all duration-300',
-                      i === 0 ? 'fill-primary' : isVisible ? 'fill-primary/80' : 'fill-muted-foreground/40',
-                    )}
-                  />
-                  {i === 0 && isVisible && (
-                    <circle cx={dot.x} cy={dot.y} r="5" className="fill-none stroke-primary stroke-2 animate-pulse" />
-                  )}
-                </g>
+                <circle
+                  key={`inside-dot-${i}`}
+                  cx={dot.x}
+                  cy={dot.y}
+                  r={i === 0 ? 4 : 3}
+                  fill={i === 0 ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.7)'}
+                />
               ))}
+
+              {/* Highlight ring on dot of interest */}
+              <circle
+                cx={localInsideDots[0]!.x}
+                cy={localInsideDots[0]!.y}
+                r="6"
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="1.5"
+              />
 
               {/* Deferred arrow */}
               <defs>
                 <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                  <polygon points="0 0, 6 3, 0 6" className="fill-muted-foreground" />
+                  <polygon points="0 0, 6 3, 0 6" fill="hsl(var(--muted-foreground))" />
                 </marker>
               </defs>
               <line
@@ -195,11 +170,11 @@ export default function LocalityDiagram() {
                 y1="52"
                 x2="88"
                 y2="52"
-                className="stroke-muted-foreground"
+                stroke="hsl(var(--muted-foreground))"
                 strokeWidth="1"
                 markerEnd="url(#arrowhead)"
               />
-              <text x="78" y="48" className="text-[7px] fill-muted-foreground">
+              <text x="78" y="48" fontSize="6" fill="hsl(var(--muted-foreground))">
                 deferred
               </text>
             </svg>

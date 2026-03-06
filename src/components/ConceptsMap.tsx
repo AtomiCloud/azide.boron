@@ -1,28 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { cn } from '../lib/utils';
+import React from 'react';
 
 export default function ConceptsMap() {
-  const [isVisible, setIsVisible] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        const entry = entries[0];
-        if (entry?.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.2 },
-    );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
   const solutions = [
     'SOLID Principles',
     'Functional Thinking',
@@ -33,13 +11,8 @@ export default function ConceptsMap() {
   ];
 
   return (
-    <div ref={containerRef} className="my-8 md:my-12">
-      <div
-        className={cn(
-          'bg-card border border-border rounded-lg p-4 md:p-6 transition-opacity duration-700',
-          isVisible ? 'opacity-100' : 'opacity-0',
-        )}
-      >
+    <div className="my-8 md:my-12">
+      <div className="bg-card border border-border rounded-lg p-4 md:p-6">
         {/* Goal Layer */}
         <div className="text-center">
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Goal</span>

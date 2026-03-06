@@ -1,40 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { cn } from '../lib/utils';
+import React from 'react';
 
 export default function SymptomsVisualization() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [animationKey, setAnimationKey] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        const entry = entries[0];
-        if (entry?.isIntersecting && !isVisible) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.3 },
-    );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [isVisible]);
-
-  // Loop animation every 5 seconds
-  useEffect(() => {
-    if (!isVisible) return;
-
-    const interval = setInterval(() => {
-      setAnimationKey(prev => prev + 1);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [isVisible]);
-
   // Fragility web - dots with hop distances from source
   const fragilityDots = [
     { x: 20, y: 30, hop: 0 }, // source
@@ -88,7 +54,7 @@ export default function SymptomsVisualization() {
   ];
 
   return (
-    <div ref={containerRef} className="my-8 md:my-12">
+    <div className="my-8 md:my-12">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         {/* Left Panel: Fragility */}
         <div className="border border-destructive/30 rounded-lg p-4 bg-destructive/5">
@@ -97,17 +63,11 @@ export default function SymptomsVisualization() {
           </div>
 
           <div className="relative aspect-square w-full max-w-[280px] mx-auto bg-muted/30 rounded border border-border overflow-hidden">
-            <svg
-              key={`fragility-${animationKey}`}
-              className="absolute inset-0 w-full h-full"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="xMidYMid meet"
-            >
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
               {/* Connections */}
               {fragilityConnections.map(([from, to], i) => {
                 const fromDot = fragilityDots[from]!;
                 const toDot = fragilityDots[to]!;
-                const maxHop = Math.max(fromDot.hop, toDot.hop);
                 return (
                   <line
                     key={i}
@@ -115,13 +75,7 @@ export default function SymptomsVisualization() {
                     y1={fromDot.y}
                     x2={toDot.x}
                     y2={toDot.y}
-                    className={cn(
-                      'transition-all duration-300',
-                      isVisible ? 'stroke-destructive/50' : 'stroke-muted-foreground/20',
-                    )}
-                    style={{
-                      animationDelay: `${maxHop * 0.3}s`,
-                    }}
+                    stroke="hsl(var(--destructive) / 0.5)"
                     strokeWidth="0.5"
                   />
                 );
@@ -134,42 +88,24 @@ export default function SymptomsVisualization() {
                     cx={dot.x}
                     cy={dot.y}
                     r={dot.hop === 0 ? 4 : dot.hop === 4 ? 3.5 : 3}
-                    className={cn(
-                      'transition-all duration-300',
+                    fill={
                       dot.hop === 0
-                        ? 'fill-primary'
+                        ? 'hsl(var(--primary))'
                         : dot.hop === 4
-                          ? isVisible
-                            ? 'fill-destructive animate-shake'
-                            : 'fill-muted-foreground/40'
-                          : isVisible
-                            ? 'fill-destructive/70'
-                            : 'fill-muted-foreground/40',
-                    )}
-                    style={{
-                      animationDelay: `${dot.hop * 0.3}s`,
-                    }}
+                          ? 'hsl(var(--destructive))'
+                          : 'hsl(var(--destructive) / 0.7)'
+                    }
                   />
-                  {dot.hop === 0 && isVisible && (
-                    <circle cx={dot.x} cy={dot.y} r="6" className="fill-none stroke-primary stroke-2 animate-pulse" />
+                  {dot.hop === 0 && (
+                    <circle cx={dot.x} cy={dot.y} r="6" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" />
                   )}
-                  {dot.hop === 4 && isVisible && (
+                  {dot.hop === 4 && (
                     <text x={dot.x} y={dot.y + 1} textAnchor="middle" className="fill-background text-[8px] font-bold">
                       ✕
                     </text>
                   )}
                 </g>
               ))}
-
-              {/* Shockwave effect */}
-              {isVisible && (
-                <circle
-                  cx={fragilityDots[0]!.x}
-                  cy={fragilityDots[0]!.y}
-                  r="0"
-                  className="fill-none stroke-destructive/30 animate-shockwave"
-                />
-              )}
             </svg>
 
             {/* Labels */}
@@ -189,17 +125,11 @@ export default function SymptomsVisualization() {
           <div className="text-center mb-3 text-sm font-semibold text-accent-foreground">Rigidity (Hard to Change)</div>
 
           <div className="relative aspect-square w-full max-w-[280px] mx-auto bg-muted/30 rounded border border-border overflow-hidden">
-            <svg
-              key={`rigidity-${animationKey}`}
-              className="absolute inset-0 w-full h-full"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="xMidYMid meet"
-            >
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
               {/* Connections */}
               {rigidityConnections.map(([from, to], i) => {
                 const fromDot = rigidityDots[from]!;
                 const toDot = rigidityDots[to]!;
-                const maxHop = Math.max(fromDot.hop, toDot.hop);
                 return (
                   <line
                     key={i}
@@ -207,20 +137,11 @@ export default function SymptomsVisualization() {
                     y1={fromDot.y}
                     x2={toDot.x}
                     y2={toDot.y}
-                    className={cn(
-                      'transition-all duration-300',
-                      isVisible ? 'stroke-accent/50' : 'stroke-muted-foreground/20',
-                    )}
-                    style={{
-                      animationDelay: `${maxHop * 0.3}s`,
-                    }}
+                    stroke="hsl(var(--accent) / 0.5)"
                     strokeWidth="0.5"
                   />
                 );
               })}
-
-              {/* Growing scope overlay */}
-              {isVisible && <ellipse cx="50" cy="55" rx="0" ry="0" className="fill-accent/10 animate-grow-scope" />}
 
               {/* Dots */}
               {rigidityDots.map((dot, i) => (
@@ -229,25 +150,13 @@ export default function SymptomsVisualization() {
                     cx={dot.x}
                     cy={dot.y}
                     r={dot.hop === 0 ? 4 : 3}
-                    className={cn(
-                      'transition-all duration-300',
-                      dot.hop === 0 ? 'fill-primary' : isVisible ? 'fill-accent/80' : 'fill-muted-foreground/40',
-                    )}
-                    style={{
-                      animationDelay: `${dot.hop * 0.25}s`,
-                    }}
+                    fill={dot.hop === 0 ? 'hsl(var(--primary))' : 'hsl(var(--accent) / 0.8)'}
                   />
-                  {dot.hop === 0 && isVisible && (
-                    <circle cx={dot.x} cy={dot.y} r="6" className="fill-none stroke-primary stroke-2 animate-pulse" />
+                  {dot.hop === 0 && (
+                    <circle cx={dot.x} cy={dot.y} r="6" fill="none" stroke="hsl(var(--primary))" strokeWidth="2" />
                   )}
-                  {dot.hop > 0 && isVisible && (
-                    <text
-                      x={dot.x}
-                      y={dot.y + 4}
-                      textAnchor="middle"
-                      className="fill-background text-[6px]"
-                      style={{ animationDelay: `${dot.hop * 0.25}s` }}
-                    >
+                  {dot.hop > 0 && (
+                    <text x={dot.x} y={dot.y + 4} textAnchor="middle" className="fill-background text-[6px]">
                       also
                     </text>
                   )}
