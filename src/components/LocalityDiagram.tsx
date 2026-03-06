@@ -3,7 +3,6 @@ import { cn } from '../lib/utils';
 
 export default function LocalityDiagram() {
   const [isVisible, setIsVisible] = useState(false);
-  const [animationKey, setAnimationKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,17 +21,6 @@ export default function LocalityDiagram() {
     }
 
     return () => observer.disconnect();
-  }, [isVisible]);
-
-  // Loop animation every 6 seconds
-  useEffect(() => {
-    if (!isVisible) return;
-
-    const interval = setInterval(() => {
-      setAnimationKey(prev => prev + 1);
-    }, 6000);
-
-    return () => clearInterval(interval);
   }, [isVisible]);
 
   // Generate fixed positions for dots (deterministic for consistency)

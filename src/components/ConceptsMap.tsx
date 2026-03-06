@@ -58,7 +58,7 @@ export default function ConceptsMap() {
         {/* Core Property Layer */}
         <div className="text-center">
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Core Property</span>
-          <div className="mt-1 inline-block bg-blue-500/20 border border-blue-500 rounded px-4 py-2 font-semibold text-blue-500 dark:text-blue-400">
+          <div className="mt-1 inline-block bg-secondary/50 border border-secondary-foreground/30 rounded px-4 py-2 font-semibold text-secondary-foreground">
             Locality
           </div>
         </div>
@@ -73,7 +73,7 @@ export default function ConceptsMap() {
         {/* Problem Layer */}
         <div className="text-center">
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Problem</span>
-          <div className="mt-1 inline-block bg-amber-500/20 border border-amber-500 rounded px-4 py-2 font-semibold text-amber-600 dark:text-amber-400">
+          <div className="mt-1 inline-block bg-accent/50 border border-accent rounded px-4 py-2 font-semibold text-accent-foreground">
             Dependencies
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function ConceptsMap() {
             </div>
             <span className="text-muted-foreground text-lg hidden sm:block">←→</span>
             <span className="text-muted-foreground text-sm sm:hidden">↔</span>
-            <div className="bg-green-500/20 border border-green-500 rounded px-3 py-1.5 text-sm font-medium text-green-600 dark:text-green-400">
+            <div className="bg-secondary/50 border border-secondary rounded px-3 py-1.5 text-sm font-medium text-secondary-foreground">
               High Cohesion
             </div>
           </div>

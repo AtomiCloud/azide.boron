@@ -185,10 +185,8 @@ export default function SymptomsVisualization() {
         </div>
 
         {/* Right Panel: Rigidity */}
-        <div className="border border-amber-500/30 rounded-lg p-4 bg-amber-500/5">
-          <div className="text-center mb-3 text-sm font-semibold text-amber-600 dark:text-amber-400">
-            Rigidity (Hard to Change)
-          </div>
+        <div className="border border-accent/30 rounded-lg p-4 bg-accent/5">
+          <div className="text-center mb-3 text-sm font-semibold text-accent-foreground">Rigidity (Hard to Change)</div>
 
           <div className="relative aspect-square w-full max-w-[280px] mx-auto bg-muted/30 rounded border border-border overflow-hidden">
             <svg
@@ -211,7 +209,7 @@ export default function SymptomsVisualization() {
                     y2={toDot.y}
                     className={cn(
                       'transition-all duration-300',
-                      isVisible ? 'stroke-amber-500/50' : 'stroke-muted-foreground/20',
+                      isVisible ? 'stroke-accent/50' : 'stroke-muted-foreground/20',
                     )}
                     style={{
                       animationDelay: `${maxHop * 0.3}s`,
@@ -222,7 +220,7 @@ export default function SymptomsVisualization() {
               })}
 
               {/* Growing scope overlay */}
-              {isVisible && <ellipse cx="50" cy="55" rx="0" ry="0" className="fill-amber-500/10 animate-grow-scope" />}
+              {isVisible && <ellipse cx="50" cy="55" rx="0" ry="0" className="fill-accent/10 animate-grow-scope" />}
 
               {/* Dots */}
               {rigidityDots.map((dot, i) => (
@@ -233,7 +231,7 @@ export default function SymptomsVisualization() {
                     r={dot.hop === 0 ? 4 : 3}
                     className={cn(
                       'transition-all duration-300',
-                      dot.hop === 0 ? 'fill-primary' : isVisible ? 'fill-amber-500/80' : 'fill-muted-foreground/40',
+                      dot.hop === 0 ? 'fill-primary' : isVisible ? 'fill-accent/80' : 'fill-muted-foreground/40',
                     )}
                     style={{
                       animationDelay: `${dot.hop * 0.25}s`,
@@ -261,7 +259,7 @@ export default function SymptomsVisualization() {
             <div className="absolute top-2 left-2 text-[9px] bg-background/80 px-1.5 py-0.5 rounded">
               want to change
             </div>
-            <div className="absolute bottom-2 right-2 text-[9px] bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">
+            <div className="absolute bottom-2 right-2 text-[9px] bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded">
               must also change
             </div>
           </div>
