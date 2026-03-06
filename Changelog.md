@@ -1,3 +1,10 @@
+## [1.5.0](https://github.com/AtomiCloud/azide.boron/compare/v1.4.0...v1.5.0) (2026-03-05)
+
+
+### ✨ Features ✨
+
+* **config:** add relevant social media accounts ([577e09c](https://github.com/AtomiCloud/azide.boron/commit/577e09cf869119e09d80565d3a4200a16648f9d6))
+
 ## [1.4.0](https://github.com/AtomiCloud/azide.boron/compare/v1.3.0...v1.4.0) (2026-03-05)
 
 
