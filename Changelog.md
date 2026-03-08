@@ -1,3 +1,16 @@
+## [1.6.0](https://github.com/AtomiCloud/azide.boron/compare/v1.5.0...v1.6.0) (2026-03-08)
+
+
+### ✨ Features ✨
+
+* **blog:** add Software Design Philosophy Part 1 ([547cdfc](https://github.com/AtomiCloud/azide.boron/commit/547cdfc438495d33a42a008a31458f2aebb37f3b))
+
+
+### 🐛 Bug Fixes 🐛
+
+* **diagrams:** improve visual clarity and layout of philosophy diagrams ([250e9f3](https://github.com/AtomiCloud/azide.boron/commit/250e9f388bec1fc147bba432a09fafda1219c45b))
+* **diagrams:** simplify to static SVG, remove series navigation ([5094cb5](https://github.com/AtomiCloud/azide.boron/commit/5094cb538da5fac377cefaad074df2a84e8f7d4c))
+
 ## [1.5.0](https://github.com/AtomiCloud/azide.boron/compare/v1.4.0...v1.5.0) (2026-03-05)
 
 
