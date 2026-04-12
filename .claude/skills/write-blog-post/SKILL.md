@@ -47,7 +47,47 @@ From the file, identify:
 
 Do NOT ask the user these questions — read the file and determine these yourself. Present a brief summary to the user for confirmation.
 
-### Step 3: Gather Metadata
+### Step 3: Detect Series Membership
+
+Check whether the content is part of a multi-part series. Look for these signals in the source file:
+
+- **Explicit markers**: "Part X of Y", "Part X", headings like "Part 2 of 8: ..."
+- **Table of contents** linking to other parts
+- **Navigation links** at the bottom (e.g., "Previous: Part 1 | Next: Part 3")
+- **Series title or name** referenced throughout (e.g., "The AtomiCloud Engineering Series")
+
+If the content is part of a series, extract:
+
+- **Series name**: The overall series title
+- **Current part number**: Which part this is (e.g., "Part 2")
+- **Total parts**: Total number of parts (e.g., "of 8")
+- **Previous part**: The slug/link to the previous part (if Part 2+, look for the link)
+- **Next part**: The slug/link to the next part (if mentioned)
+
+Then check if the previous part(s) already exist as published blog posts by searching `src/pages/blog/*.astro` for matching titles or slugs. This determines whether cross-linking is possible.
+
+If the content IS part of a series:
+
+- **Include in the description**: Prefix with "Part X of Y: " (e.g., "Part 2 of 8: Every dependency has two properties...")
+- **Add an opening series note**: Use an italicized intro paragraph linking to the previous part, like:
+  ```astro
+  <p class="text-lg leading-relaxed mb-6">
+    <em>Part 2 of 8 in the [Series Name]. <a href="/blog/previous-part-slug" class="text-primary hover:underline">Part 1</a> covered [brief topic]. This part covers [current topic].</em>
+  </p>
+  ```
+- **Link to next part at the end**: If the next part exists as a blog post, add a closing link. If it doesn't exist yet, mention it without a live link.
+
+If the content is NOT part of a series, skip all of the above — no series prefix, no series navigation.
+
+Do NOT ask the user whether the content is part of a series — determine this yourself from the file.
+
+**However, always confirm your findings with the user** before proceeding. Present the detected series info and ask:
+
+> "I detected this is **Part X of Y** in the **[Series Name]** series. [Previous/next part details]. Does that look correct?"
+
+If the user corrects you (e.g., the series name is different, the part number is wrong, or it's not actually part of a series), adjust accordingly.
+
+### Step 4: Gather Metadata
 
 Propose the following based on the content, then confirm with the user:
 
@@ -57,9 +97,7 @@ Propose the following based on the content, then confirm with the user:
 - **Tags**: 3-5 relevant tags (lowercase, hyphenated)
 - **Share Message**: A baity but neutral hook (50-100 characters) — see guidelines below
 
-**Important**: Once title and metadata are agreed on, ask:
-
-> "Please provide a URL to a cover image for this blog post. This will be displayed on the homepage card."
+No need to ask for a cover image — the OG image is auto-generated from the blog post slug at `/blog/${slug}/og.png`. Skip any cover image step.
 
 ### Share Message Guidelines
 
@@ -111,7 +149,7 @@ Create a **baity but neutral** share message that hooks readers while maintainin
 
 **The Goal**: Create curiosity and interest without sounding like a used car salesman. Think "hmm, that's interesting" rather than "OMG YOU NEED TO READ THIS!!!"
 
-### Step 4: Determine Author
+### Step 5: Determine Author
 
 Run to get git username:
 
@@ -125,7 +163,7 @@ Then ask the user:
 
 Use whichever they choose. Use today's date (YYYY-MM-DD format).
 
-### Step 5: Create the Blog Post File
+### Step 6: Create the Blog Post File
 
 Generate slug from title (lowercase, spaces to hyphens, remove special chars).
 
@@ -378,19 +416,20 @@ Before finalizing, verify:
 
 ## Dev Server Management
 
-**CRITICAL**: The user runs the dev server themselves. NEVER run `pls dev` yourself.
+The agent is responsible for ensuring exactly ONE `pls dev` process is running throughout the blog post workflow.
 
-Before starting work, check if a dev server is already running:
+**Before starting any work**, check if a dev server is already running:
 
 ```bash
 lsof -i :4321
 ```
 
-If a server is already running, do nothing — the user will refresh to see changes.
+- If a server is already running on port 4321, do nothing — it is ready to use.
+- If no server is running, start one yourself in the background:
 
-If no server is running, tell the user to start it:
-
-> "Please start the dev server with `pls dev` so you can preview the blog post."
+```bash
+pls dev
+```
 
 The blog post will be available at `http://localhost:4321/blog/[slug]` once the server is running.
 
@@ -405,13 +444,17 @@ After creating the initial blog post:
 
 ## Lint Check
 
-Before declaring the blog post done, run:
+Run `pls lint` at these points in the workflow:
+
+1. **After creating the blog post file** — before presenting it to the user for review
+2. **After each round of edits** — before asking the user to review again
+3. **Before committing** — must pass to proceed
 
 ```bash
 pls lint
 ```
 
-If linting fails, fix any issues and re-run until it passes.
+If linting fails, fix the issues yourself and re-run until it passes. Do not present lint errors to the user — resolve them automatically.
 
 ## After Finalization
 
