@@ -1,54 +1,63 @@
 ---
 name: write-blog-post
-description: Help non-programmers write interactive, SEO-friendly blog posts with rich formatting, Cards, Badges, Buttons, and infographic-style layouts. Automatically adds posts to homepage with cover images. Use when user wants to create or write a new blog post.
+description: Convert pre-written content from a file into a published blog post. Creates a branch, transforms the content into a formatted Astro blog post, starts the dev server, and iterates with the user until satisfied. Use when the user has a file with content they want to turn into a blog post.
 ---
 
-# Blog Post Writer
+# Write Blog Post
 
-Guide non-programmers through creating beautiful, interactive blog posts for the Azide Boron blog.
+Convert pre-written content from a file into a beautiful, interactive blog post for the Azide Boron blog.
 
 ## When to Use
 
 Activate this skill when the user wants to:
 
-- Write a new blog post
-- Create blog content
-- Publish an article
-- Add a post to the blog
+- Turn a file of content into a blog post
+- Import existing writing into the blog
+- Convert a document/article into a published blog post
+- Publish pre-written content
 
 ## Process Overview
 
-### Step 1: Understand the Content
+### Step 0: Get the Source File
 
-Ask the user:
+The user must provide a file path to the pre-written content. If not provided in the invocation, ask:
 
-- **Topic**: What do they want to write about?
+> "What file contains the content you'd like to turn into a blog post?"
+
+Read the file and understand the content before proceeding.
+
+### Step 1: Create a Branch
+
+Before any work, create a new branch for the blog post:
+
+```bash
+git checkout -b blog/<slug-from-title>
+```
+
+Use a slug derived from the content's topic or working title. This keeps the work isolated.
+
+### Step 2: Understand the Content
+
+From the file, identify:
+
+- **Topic**: What is the content about?
 - **Audience**: Who is the target reader?
 - **Key Message**: What's the main takeaway?
-- **Main Points**: What specific points should be covered?
+- **Main Points**: What specific points are covered?
 
-### Step 2: Plan the Structure
-
-Based on their input, suggest a structure:
-
-- Opening paragraph (engaging hook)
-- 3-5 main sections with headings
-- Key insights as Card components
-- Important terms as Badges
-- Call-to-action with Button components
-- Key takeaways section at the end
+Do NOT ask the user these questions — read the file and determine these yourself. Present a brief summary to the user for confirmation.
 
 ### Step 3: Gather Metadata
 
-Help craft:
+Propose the following based on the content, then confirm with the user:
 
 - **Title**: Compelling, SEO-friendly (50-60 characters)
 - **Description**: Clear summary (120-160 characters)
 - **Topic**: tech | marketing | entrepreneurship | productivity | health
 - **Tags**: 3-5 relevant tags (lowercase, hyphenated)
-- **Share Message**: A baity but neutral hook (50-100 characters) that creates curiosity without hype - use questions, contrasts, or surprising insights
+- **Share Message**: A baity but neutral hook (50-100 characters) — see guidelines below
 
-**Important**: Once title is decided, ask:
+**Important**: Once title and metadata are agreed on, ask:
 
 > "Please provide a URL to a cover image for this blog post. This will be displayed on the homepage card."
 
@@ -59,7 +68,7 @@ Create a **baity but neutral** share message that hooks readers while maintainin
 - **Include a hook or curiosity gap** that makes people want to click
 - **Sounds natural**, like you're casually sharing something intriguing with a friend
 - **Teases the insight** without giving it away completely
-- **Stays neutral in tone** - no excessive enthusiasm or hyperbole
+- **Stays neutral in tone** — no excessive enthusiasm or hyperbole
 - **Is concise** (50-100 characters)
 - **Uses questions, contrasts, or surprising elements** to create interest
 
@@ -94,15 +103,15 @@ Create a **baity but neutral** share message that hooks readers while maintainin
 
 **Bad Examples:**
 
-- ❌ "Amazing article about [topic] - must read!" (too enthusiastic)
-- ❌ "This will blow your mind!" (overly hyped)
-- ❌ "The ultimate guide to [topic]!" (generic clickbait)
-- ❌ "[Topic] explained (you won't believe #3!)" (cheap clickbait)
-- ❌ "SHOCKING truth about [topic]" (excessive caps/drama)
+- "Amazing article about [topic] - must read!" (too enthusiastic)
+- "This will blow your mind!" (overly hyped)
+- "The ultimate guide to [topic]!" (generic clickbait)
+- "[Topic] explained (you won't believe #3!)" (cheap clickbait)
+- "SHOCKING truth about [topic]" (excessive caps/drama)
 
 **The Goal**: Create curiosity and interest without sounding like a used car salesman. Think "hmm, that's interesting" rather than "OMG YOU NEED TO READ THIS!!!"
 
-### Step 4: Get Author Info
+### Step 4: Determine Author
 
 Run to get git username:
 
@@ -110,11 +119,25 @@ Run to get git username:
 git config user.name
 ```
 
-Use this as the author. Use today's date (YYYY-MM-DD format).
+Then ask the user:
+
+> "I detected the git author as **[git name]**. Would you like to publish under this name, or as **Adelphi Liong**?"
+
+Use whichever they choose. Use today's date (YYYY-MM-DD format).
 
 ### Step 5: Create the Blog Post File
 
 Generate slug from title (lowercase, spaces to hyphens, remove special chars).
+
+Transform the source content into a properly formatted Astro blog post using the template below. Key transformation rules:
+
+- **Preserve the original voice and message** — do not rewrite the content in your own words
+- **Add structure**: Break long walls of text into sections with H2/H3 headings
+- **Enhance readability**: Add Cards for key points, Badges for important terms, blockquotes for emphasis
+- **Add an engaging opening hook** if the original content starts flat — but keep it true to the author's style
+- **Add a Key Takeaways section** at the end, distilling the main points
+- **Add a CTA section** if the content has a natural call-to-action
+- **Keep paragraphs short** (2-4 sentences) — split long paragraphs
 
 Create file: `src/pages/blog/[slug].astro`
 
@@ -135,7 +158,6 @@ export const frontmatter = {
   date: '2025-01-28',
   topic: 'tech' as const,
   tags: ['tag1', 'tag2', 'tag3'],
-  coverImage: 'https://example.com/image.jpg',
   shareMessage: 'Why [topic] might not work the way you think',
 };
 
@@ -235,14 +257,13 @@ const post = getBlogPost('post-slug')!;
 
 ## Content Quality Standards
 
-When creating blog posts, prioritize these non-functional requirements to ensure exceptional quality:
+When transforming content into blog posts, prioritize these non-functional requirements:
 
 ### 1. Rigorous & Research-Backed
 
-- **Cite credible sources**: Reference academic papers, industry research, or authoritative publications
-- **Provide evidence**: Back up claims with data, statistics, or expert opinions
-- **Include references**: Add inline citations or a "References" section at the end
-- **Verify facts**: Cross-check information before including it
+- **Cite credible sources**: If the source content references academic papers, industry research, or authoritative publications, preserve and format those citations
+- **Provide evidence**: Keep data, statistics, or expert opinions from the original
+- **Include references**: Add a "References" section at the end if the source content has citations
 - **Use Badge components** to highlight research citations: `<Badge client:load variant="outline">Source: Nature 2024</Badge>`
 
 Example citation format:
@@ -256,26 +277,23 @@ Example citation format:
 
 ### 2. Unique & Original
 
-- **Fresh perspective**: Avoid rehashing common takes; find a novel angle
-- **Original insights**: Share observations that aren't widely discussed
-- **Unique examples**: Use specific, concrete examples rather than generic scenarios
-- **Personal research**: Consider conducting small experiments or surveys
-- **Challenge assumptions**: Question conventional wisdom where appropriate
+- **Preserve the author's voice**: Do not rewrite the content in a generic tone — keep what makes it unique
+- **Original insights**: Retain the author's original observations and conclusions
+- **Unique examples**: Keep specific, concrete examples from the source content
+- **Challenge assumptions**: If the source content challenges conventional wisdom, highlight that
 
 ### 3. Insightful & Thought-Provoking
 
-- **Second-order thinking**: Go beyond obvious observations
-- **Hidden connections**: Reveal non-obvious relationships between concepts
-- **"Aha!" moments**: Structure content to deliver surprising realizations
-- **Counterintuitive points**: Highlight phenomena that contradict expectations
-- **Deep implications**: Explore the broader consequences of the topic
+- **Second-order thinking**: If the source content goes beyond obvious observations, make that structure visible
+- **Hidden connections**: Use Card components to spotlight non-obvious relationships
+- **Counterintuitive points**: Highlight phenomena that contradict expectations using visual components
 
 Use Card components to spotlight key insights:
 
 ```astro
 <Card client:load className="bg-primary/5 border-primary">
   <CardHeader>
-    <CardTitle className="text-xl">💡 Key Insight</CardTitle>
+    <CardTitle className="text-xl">Key Insight</CardTitle>
   </CardHeader>
   <CardContent>
     <p class="text-muted-foreground">
@@ -287,66 +305,24 @@ Use Card components to spotlight key insights:
 
 ### 4. Click-Baity & Engaging (Ethically)
 
-- **Compelling hook**: Open with a surprising fact, provocative question, or vivid scenario
-- **Curiosity gaps**: Tease interesting information that gets revealed later
-- **Pattern interrupts**: Break expectations to maintain attention
-- **Progressive disclosure**: Build tension by revealing information gradually
-- **Payoff**: Ensure the content delivers on the promise of the title
+- **Compelling hook**: If the source content opens flat, add a hook that's true to the author's style
+- **Curiosity gaps**: Use subheadings that tease what's coming next
 - **Scroll-stopping subheadings**: Make H2/H3 headings intriguing enough to keep reading
-
-**Opening hook strategies:**
-
-- Start with a counterintuitive statement
-- Begin with a mini-story or anecdote
-- Ask a provocative question
-- Present a surprising statistic
-- Describe a relatable problem vividly
 
 ### 5. Narrative & Story-Driven
 
-- **Story arc**: Structure with beginning (setup), middle (tension), end (resolution)
-- **Concrete scenarios**: Use specific examples and case studies
-- **Character elements**: Feature real people or personified concepts
-- **Tension and conflict**: Highlight problems, challenges, or paradoxes
-- **Visual storytelling**: Use descriptive language that paints mental pictures
-- **Emotional resonance**: Connect with readers' experiences and feelings
-
-**Narrative techniques:**
-
-- Use "Before/After" frameworks
-- Tell origin stories of ideas or technologies
-- Create hypothetical scenarios readers can visualize
-- Use metaphors and analogies to make abstract concepts concrete
-- Include micro-stories within sections (2-3 sentence anecdotes)
-
-**Story structure template:**
-
-```astro
-<!-- Act 1: Setup -->
-<p class="text-lg">
-  [Hook: Surprising observation or relatable problem]
-</p>
-
-<!-- Act 2: Investigation -->
-<h2>The Hidden Pattern</h2>
-<p>[Explore the phenomenon with research and examples]</p>
-
-<!-- Act 3: Implications -->
-<h2>What This Means For You</h2>
-<p>[Connect insights to reader's life]</p>
-
-<!-- Resolution: Key Takeaways -->
-<h2>Key Takeaways</h2>
-[Distill the lessons learned]
-```
+- **Story arc**: Preserve the original narrative structure (setup, tension, resolution)
+- **Concrete scenarios**: Keep specific examples and case studies from the source
+- **Tension and conflict**: Highlight problems, challenges, or paradoxes with blockquotes or Cards
 
 ### Content Quality Checklist
 
-Before publishing, verify:
+Before finalizing, verify:
 
-- [ ] At least 2-3 credible sources cited
-- [ ] Unique angle or perspective not commonly discussed
-- [ ] At least one "aha!" insight that surprises readers
+- [ ] Author's original voice and message are preserved
+- [ ] At least 2-3 credible sources cited (if present in source content)
+- [ ] Unique angle or perspective maintained from the original
+- [ ] At least one "aha!" insight highlighted with a visual component
 - [ ] Opening hook that grabs attention within first 2 sentences
 - [ ] Clear narrative arc with tension and resolution
 - [ ] Concrete examples and scenarios (not just abstract concepts)
@@ -394,23 +370,117 @@ Before publishing, verify:
 ## Important Notes
 
 - Always use `client:load` for React components
-- Keep paragraphs short (2-4 sentences)
+- Keep paragraphs short (2-4 sentences) — split long paragraphs from source content
 - Use proper heading hierarchy
 - Social share buttons auto-added by layout
 - Reading time auto-calculated
 - Post auto-appears on homepage
 
-## After Creation
+## Dev Server Management
 
-1. Show user the file path
-2. Tell them to refresh http://localhost:4321/
-3. Offer to preview the blog post at http://localhost:4321/blog/[slug]
-4. Ask if they want adjustments
+**CRITICAL**: The user runs the dev server themselves. NEVER run `pls dev` yourself.
 
-The blog post will automatically:
+Before starting work, check if a dev server is already running:
 
-- Appear on homepage
-- Be included in search index
-- Have OG image generated
-- Be sorted by date
-- Be filterable by topic and tags
+```bash
+lsof -i :4321
+```
+
+If a server is already running, do nothing — the user will refresh to see changes.
+
+If no server is running, tell the user to start it:
+
+> "Please start the dev server with `pls dev` so you can preview the blog post."
+
+The blog post will be available at `http://localhost:4321/blog/[slug]` once the server is running.
+
+## Iteration Loop
+
+After creating the initial blog post:
+
+1. Tell the user the file path and the preview URL: `http://localhost:4321/blog/[slug]`
+2. Ask the user to review and provide feedback
+3. Make edits based on feedback
+4. Repeat until the user is satisfied
+
+## Lint Check
+
+Before declaring the blog post done, run:
+
+```bash
+pls lint
+```
+
+If linting fails, fix any issues and re-run until it passes.
+
+## After Finalization
+
+Once the user is satisfied with the blog post:
+
+1. Ensure `pls lint` passes
+2. Commit the changes (see Commit & PR section below)
+3. Create a PR (see Commit & PR section below)
+4. The blog post will automatically:
+   - Appear on homepage
+   - Be included in search index
+   - Have OG image generated
+   - Be sorted by date
+   - Be filterable by topic and tags
+
+## Commit & PR
+
+Once the user confirms they are happy with the blog post, commit and create a PR.
+
+### Step 1: Commit
+
+Use the `/commit-changes` skill conventions:
+
+1. Run `pls lint` — must pass before committing
+2. Run `git status` and `git diff` to review changes
+3. Stage the new blog post file: `git add src/pages/blog/<slug>.astro`
+4. Commit using Conventional Commits format:
+
+```bash
+git commit -m "$(cat <<'EOF'
+feat(blog): add <short title slug>
+
+<1-2 sentence summary of the blog post topic>
+EOF
+)"
+```
+
+**Important**:
+
+- NO `--no-verify` flag
+- NO co-authored-by tags
+- NO `-i` (interactive) flag
+
+### Step 2: Push
+
+Push the branch to remote:
+
+```bash
+git push -u origin blog/<slug>
+```
+
+### Step 3: Create PR
+
+Create a PR using `gh pr create` with:
+
+```bash
+gh pr create --title "feat(blog): add <post title>" --body "$(cat <<'EOF'
+## Summary
+- Add new blog post: "<Post Title>"
+- Topic: <topic> | Tags: <tag1>, <tag2>, <tag3>
+
+## Preview
+Visit http://localhost:4321/blog/<slug> to preview (requires `pls dev`)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+### Step 4: Confirm
+
+Share the PR URL with the user and let them know the blog post is ready for review.

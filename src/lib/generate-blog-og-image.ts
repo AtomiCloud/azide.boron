@@ -18,7 +18,7 @@ function loadLogo(): string {
   }
 }
 
-export interface GenerateBlogOgImageOptions extends BlogOgImageProps {
+interface GenerateBlogOgImageOptions extends BlogOgImageProps {
   width?: number;
   height?: number;
 }

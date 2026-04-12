@@ -7,9 +7,8 @@ interface SocialShareButtonsProps {
   shareMessage?: string;
 }
 
-export function SocialShareButtons({ title, description, url, shareMessage }: SocialShareButtonsProps) {
+export function SocialShareButtons({ title, url, shareMessage }: SocialShareButtonsProps) {
   const encodedUrl = encodeURIComponent(url);
-  const encodedTitle = encodeURIComponent(title);
   // Use custom share message if provided, otherwise fall back to title
   const shareText = shareMessage || title;
   const encodedShareText = encodeURIComponent(shareText);

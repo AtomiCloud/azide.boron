@@ -96,5 +96,23 @@ pre-commit-lib.run {
       pass_filenames = true;
     };
 
+    a-astro-check = {
+      enable = true;
+      name = "Astro Check";
+      entry = "${packages.bun}/bin/bun run astro-check";
+      files = ".*(astro|tsx?)$";
+      language = "system";
+      pass_filenames = false;
+    };
+
+    a-knip = {
+      enable = true;
+      name = "Knip";
+      description = "Detect unused code and dependencies";
+      entry = "${packages.bun}/bin/bunx knip";
+      language = "system";
+      pass_filenames = false;
+    };
+
   };
 }

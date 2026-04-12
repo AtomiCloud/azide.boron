@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { PWAInstallButton } from '../components/PWAInstallButton';
@@ -201,9 +201,9 @@ const topics = [...new Set(allPosts.map(post => post.topic))];
       searchIndex = new FlexSearch.Document({
         id: 'slug',
         tokenize: 'forward',
-        optimize: true,
         resolution: 9,
         context: {
+          resolution: 9,
           depth: 2,
           bidirectional: true,
         },
@@ -211,7 +211,6 @@ const topics = [...new Set(allPosts.map(post => post.topic))];
           {
             field: 'title',
             tokenize: 'forward',
-            optimize: true,
             resolution: 9,
           },
           {
