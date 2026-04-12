@@ -1,0 +1,426 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { getBlogPost } from '../../lib/blog-posts';
+import DependencyQuadrant from '../../components/DependencyQuadrant';
+import ExplicitnessFlow from '../../components/ExplicitnessFlow';
+
+export const frontmatter = {
+  title: 'The Dependency Model',
+  description: 'Part 2 of 8: Every dependency has two properties that determine whether it helps or harms your code',
+  author: 'Adelphi Liong',
+  date: '2026-04-11',
+  topic: 'tech' as const,
+  tags: ['software-design', 'dependency-injection', 'architecture', 'engineering'],
+  shareMessage: 'Why explicit dependencies are a consequence, not a choice',
+};
+
+const post = getBlogPost('the-dependency-model-part-2')!;
+---
+
+<BlogPostLayout post={post}>
+  <!-- Series Intro -->
+  <p class="text-lg leading-relaxed mb-6">
+    <em>Part 2 of 8 in the <a href="/blog/software-design-philosophy-part-1" class="text-primary hover:underline">AtomiCloud Engineering Series</a>. <a href="/blog/software-design-philosophy-part-1" class="text-primary hover:underline">Part 1</a> established locality as the goal — keeping related things together, unrelated things apart. Dependencies are what connect code. This part introduces a model for thinking about them.</em>
+  </p>
+
+  <!-- Two Dimensions -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Two Dimensions of Dependencies</h2>
+
+  <p class="mb-6">
+    Every dependency has two properties worth thinking about:
+  </p>
+
+  <div class="grid md:grid-cols-2 gap-6 my-8">
+    <Card client:load>
+      <CardHeader>
+        <CardTitle className="text-xl">Explicitness</CardTitle>
+        <p class="text-muted-foreground">Can you see it?</p>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">
+          Is the dependency declared in the interface, or buried inside the implementation? When you read a constructor, do you see everything the class needs?
+        </p>
+      </CardContent>
+    </Card>
+
+    <Card client:load>
+      <CardHeader>
+        <CardTitle className="text-xl">Flexibility</CardTitle>
+        <p class="text-muted-foreground">Can you change it?</p>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">
+          Can you change the dependency's behavior from outside, or is it locked in? Can you swap it for testing, staging, or different use cases?
+        </p>
+      </CardContent>
+    </Card>
+  </div>
+
+  <p class="mb-6">
+    These are mostly independent. As we will see, one particular combination turns out to be impossible in practice — which reveals something deeper about why these properties matter.
+  </p>
+
+  <!-- Implicit vs Explicit -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Implicit vs. Explicit</h2>
+
+  <p class="mb-6">
+    An <strong>implicit dependency</strong> is one you cannot see by reading the signature. You discover it by reading the implementation — or when something breaks.
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>function processOrder(order):
+  Logger.log("Processing order")    // implicit: Logger not in signature
+  result = Database.query(...)      // implicit: Database not in signature
+  return result</code></pre>
+
+  <p class="mb-6">
+    The signature says <code class="bg-muted px-1.5 py-0.5 rounded text-sm">processOrder(order)</code>. But the function also depends on <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Logger</code> and <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Database</code>. These dependencies are real — the function cannot work without them — but they are invisible to callers.
+  </p>
+
+  <p class="mb-6">
+    An <strong>explicit dependency</strong>, by contrast, appears in a signature — either the constructor or the method parameters. The user is <em>forced</em> to provide it. There is no way to construct the object without knowing what it needs.
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class OrderService:
+  private readonly repo: IOrderRepository
+  private readonly logger: ILogger
+
+  constructor(repo: IOrderRepository, logger: ILogger):
+    this.repo = repo
+    this.logger = logger
+
+  process(order: Order): Result&lt;Order, OrderError&gt;</code></pre>
+
+  <p class="mb-6">
+    The key is not merely that you <em>can</em> see the dependency — it is that the dependency is <em>required at construction</em>. The user must provide a repository and a logger. There is no way to accidentally forget one. Even if a dependency does not appear in a method signature, if the constructor forces the user to choose it, it is still explicit.
+  </p>
+
+  <blockquote class="border-l-4 border-primary pl-4 my-8 italic text-lg text-muted-foreground">
+    Explicit dependencies create locality in both directions. From the outside looking in: when you use a class, you know exactly what it needs. Read the constructor, and every collaborator is right there. From the inside looking out: when you read the implementation, all dependencies are declared — you can understand the service in isolation without tracing callers.
+  </blockquote>
+
+  <p class="mb-6">
+    Both directions matter. The first protects the person <em>using</em> the code. The second protects the person <em>reading</em> the code. Together, they are what locality looks like in practice.
+  </p>
+
+  <!-- Fixed vs Flexible -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Fixed vs. Flexible</h2>
+
+  <p class="mb-6">
+    A <strong>fixed dependency</strong> is hardcoded. The code decides exactly what to use, and nothing outside can change that decision.
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class OrderService:
+  calculateTotal(order):
+    return new TaxCalculator().apply(order)  // fixed: always TaxCalculator</code></pre>
+
+  <p class="mb-6">
+    <code class="bg-muted px-1.5 py-0.5 rounded text-sm">OrderService</code> creates its own <code class="bg-muted px-1.5 py-0.5 rounded text-sm">TaxCalculator</code>. No other code can provide a different implementation. If you want different tax logic, you must edit this class. Intercepting this would require monkey-patching or reflection — hacks that work around the design rather than with it.
+  </p>
+
+  <p class="mb-6">
+    A subtler form of fixedness is the <strong>immutable singleton</strong>:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>Global.TaxCalculator = new USTaxCalculator()   // set once, never changed
+
+class OrderService:
+  calculateTotal(order):
+    return Global.TaxCalculator.apply(order)   // fixed via immutable global</code></pre>
+
+  <p class="mb-6">
+    The global is immutable, so the dependency cannot be swapped at runtime. You <em>could</em> change it by mutating the global — but that introduces mutable global state, which is worse. If the global is truly immutable, the dependency is fixed. Either way, it locks in decisions: the code that uses a dependency also decides which dependency to use.
+  </p>
+
+  <p class="mb-6">
+    A <strong>flexible dependency</strong> can be changed from outside. The code receives its dependency rather than creating it.
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class OrderService:
+  private readonly taxCalculator: ITaxCalculator
+
+  constructor(taxCalculator: ITaxCalculator):
+    this.taxCalculator = taxCalculator
+
+  calculateTotal(order):
+    return this.taxCalculator.apply(order)</code></pre>
+
+  <p class="mb-6">
+    Now <code class="bg-muted px-1.5 py-0.5 rounded text-sm">OrderService</code> does not decide which calculator to use. The caller decides. Pass a <code class="bg-muted px-1.5 py-0.5 rounded text-sm">USTaxCalculator</code> for US orders, a <code class="bg-muted px-1.5 py-0.5 rounded text-sm">UKTaxCalculator</code> for UK orders, a <code class="bg-muted px-1.5 py-0.5 rounded text-sm">MockTaxCalculator</code> for tests. The code that uses the dependency is separated from the code that selects it.
+  </p>
+
+  <!-- Three Combinations -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Three Combinations, Not Four</h2>
+
+  <p class="mb-6">
+    You might expect four quadrants from two binary dimensions. But one combination does not exist in practice.
+  </p>
+
+  <DependencyQuadrant client:load />
+
+  <h3 class="text-2xl font-bold mt-8 mb-4">Implicit and fixed: the worst case</h3>
+
+  <p class="mb-6">
+    You cannot see <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Logger</code> or <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Database</code> in the signature, and you cannot swap them. This is the breeding ground for fragility — hidden connections that break unexpectedly.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-8 mb-4">Implicit and flexible: the dangerous case</h3>
+
+  <p class="mb-6">
+    This is what you get with mutable globals. You can change <code class="bg-muted px-1.5 py-0.5 rounded text-sm">config.retries</code> at runtime, so the dependency is flexible. But you cannot see that <code class="bg-muted px-1.5 py-0.5 rounded text-sm">makeRequest</code> depends on <code class="bg-muted px-1.5 py-0.5 rounded text-sm">config</code> by reading its signature.
+  </p>
+
+  <p class="mb-6">
+    Any code anywhere can modify <code class="bg-muted px-1.5 py-0.5 rounded text-sm">config</code>, and the function's behavior depends on what happened before the call. This can actually be <em>worse</em> than the fixed case — you have the illusion of flexibility without any clarity about what depends on what.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-8 mb-4">Explicit and fixed: impossible</h3>
+
+  <p class="mb-6">
+    Think about it: if a dependency is explicit — it appears in the constructor signature — then the caller <em>provides</em> it. And if the caller provides it, they can provide different things. That is flexibility by definition.
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class OrderService:
+  constructor(calculator: TaxCalculator):  // explicit...
+    this.calculator = calculator
+
+// But now the caller can provide anything:
+service1 = new OrderService(new USTaxCalculator())
+service2 = new OrderService(new UKTaxCalculator())</code></pre>
+
+  <p class="mb-6">
+    Even if the constructor takes a concrete type instead of an interface, the caller still chooses <em>which instance</em>. The moment you force the user to provide a dependency, you have made it flexible. This is why there are only three meaningful combinations.
+  </p>
+
+  <Card client:load className="bg-primary/5 border-primary my-8">
+    <CardHeader>
+      <CardTitle className="text-xl">The Goal: Explicit and Flexible</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p class="text-muted-foreground">
+        The dependency appears in the constructor. The implementation is received rather than created. You can see it, mock it, swap it. This is what dependency injection achieves.
+      </p>
+    </CardContent>
+  </Card>
+
+  <!-- Why Two Properties -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Why Two Properties If One Implies the Other?</h2>
+
+  <p class="mb-6">
+    If explicitness implies flexibility, why bother talking about two separate properties? Because the argument <em>for</em> each one lands differently, and the path from flexibility to explicitness is not as obvious as it seems.
+  </p>
+
+  <div class="grid md:grid-cols-2 gap-6 my-8">
+    <Card client:load>
+      <CardHeader>
+        <CardTitle className="text-xl">Explicitness: The Weaker Argument</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground mb-3">
+          Many developers will push back: "Why should I care what database the service uses? That is an implementation detail. Hide it. Encapsulate it."
+        </p>
+        <p class="text-muted-foreground">
+          This is the traditional OOP encapsulation argument, and it sounds reasonable. Plenty of experienced engineers will tell you that good code <em>hides</em> its dependencies.
+        </p>
+      </CardContent>
+    </Card>
+
+    <Card client:load>
+      <CardHeader>
+        <CardTitle className="text-xl">Flexibility: The Stronger Argument</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground mb-3">
+          Almost no one argues against the ability to swap implementations. "I want to test this without a real database." "I want to use a different payment processor in staging."
+        </p>
+        <p class="text-muted-foreground">
+          These are practical needs that everyone understands and agrees with.
+        </p>
+      </CardContent>
+    </Card>
+  </div>
+
+  <p class="mb-6">
+    So start with flexibility. Everyone wants it. The question is: how do you get it?
+  </p>
+
+  <p class="mb-6">
+    There are two roads to flexible dependencies. The first is <strong class="text-destructive">mutable globals</strong>:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>var emailClient = new SmtpClient()
+
+function sendWelcome(user):
+  emailClient.send(user.email, "Welcome!")
+
+// In tests:
+emailClient = new MockEmailClient()    // swap it out
+sendWelcome(testUser)</code></pre>
+
+  <p class="mb-6">
+    This works. The dependency is flexible — you can swap <code class="bg-muted px-1.5 py-0.5 rounded text-sm">emailClient</code> before calling <code class="bg-muted px-1.5 py-0.5 rounded text-sm">sendWelcome</code>. You can use a real SMTP client in production and a mock in tests. Flexibility achieved.
+  </p>
+
+  <p class="mb-6">
+    But now you have mutable global state. Any code anywhere can reassign <code class="bg-muted px-1.5 py-0.5 rounded text-sm">emailClient</code> at any time. The function's behavior depends on what happened to the global <em>before</em> the call. You are back to temporal coupling.
+  </p>
+
+  <p class="mb-6">
+    In a real codebase, this leads to test pollution (one test swaps the global, forgets to reset it, the next test fails mysteriously), race conditions in concurrent code, and "who changed this?" debugging sessions.
+  </p>
+
+  <blockquote class="border-l-4 border-primary pl-4 my-8 italic text-lg text-muted-foreground">
+    If you accept that immutability is a property we need — that references should not change after they are set — then mutable globals are off the table. The global-swap route to flexibility is closed.
+  </blockquote>
+
+  <ExplicitnessFlow client:load />
+
+  <p class="mb-6">
+    What is left? The only way to get flexible dependencies <em>without</em> mutable state is to provide them at construction time:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class WelcomeService:
+  private readonly client: IEmailClient
+
+  constructor(client: IEmailClient):
+    this.client = client
+
+  sendWelcome(user):
+    this.client.send(user.email, "Welcome!")</code></pre>
+
+  <Card client:load className="bg-primary/5 border-primary my-8">
+    <CardHeader>
+      <CardTitle className="text-xl">The Inevitable Result</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p class="text-muted-foreground">
+        The dependency is flexible — the caller chooses which client to provide. The reference is immutable — set once in the constructor and never changed. And look: the dependency is now <strong class="text-foreground">explicit in the constructor signature</strong>. You did not set out to make it explicit. You set out to make it flexible without mutable state, and explicitness was the inevitable result.
+      </p>
+    </CardContent>
+  </Card>
+
+  <p class="mb-6">
+    This is why we talk about two properties even though one implies the other. The <em>motivation</em> is flexibility and immutability — properties that everyone already wants. Explicitness is not a separate goal you must argue for. It is a <em>consequence</em> of pursuing the other two.
+  </p>
+
+  <p class="mb-6">
+    The developers who resist explicitness on principle will still end up with it if they pursue flexibility and immutability consistently.
+  </p>
+
+  <!-- Quick Checklist -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Quick Checklist</h2>
+
+  <div class="grid md:grid-cols-2 gap-6 my-8">
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Explicitness</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul class="space-y-2 text-muted-foreground">
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            All collaborators appear in constructor signatures
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            All per-call data appears in method parameters
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            No implicit reads from globals, singletons, or static state
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            Reading a constructor tells you everything a class needs
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            Users of the class know all dependencies without reading implementation
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            Implementers know all dependencies without knowing who calls them
+          </li>
+        </ul>
+      </CardContent>
+    </Card>
+
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Flexibility</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul class="space-y-2 text-muted-foreground">
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            Services depend on interfaces, not concrete implementations
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            Dependencies are received, not created (no new in methods)
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            No static method calls to access collaborators
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            No singletons accessed globally
+          </li>
+        </ul>
+      </CardContent>
+    </Card>
+  </div>
+
+  <!-- What Comes Next -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">What Comes Next</h2>
+
+  <p class="mb-6">
+    We have a model for thinking about dependencies. But how do we organize code so that dependencies are placed well? What belongs together? What belongs apart?
+  </p>
+
+  <p class="mb-6">
+    <a href="/blog/solid-principles-part-3" class="text-primary hover:underline">Part 3: SOLID Principles</a> gives us the rules. SOLID is not arbitrary — each principle addresses a specific aspect of placing dependencies well. Single Responsibility governs cohesion. Dependency Inversion enables flexibility. Interface Segregation ensures explicitness is meaningful.
+  </p>
+
+  <!-- Key Takeaways -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Key Takeaways</h2>
+
+  <div class="flex flex-col gap-6 my-8">
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Dependencies have two independent dimensions</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">Explicitness (visible in the signature) and flexibility (swappable from outside) determine whether a dependency helps or harms locality.</p>
+      </CardContent>
+    </Card>
+
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Explicit and fixed is impossible</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">The moment a dependency appears in a constructor, the caller provides it — which means the caller can provide different implementations. Explicitness implies flexibility.</p>
+      </CardContent>
+    </Card>
+
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Explicitness is a consequence, not a goal</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">You do not need to argue for explicit dependencies. If you pursue flexibility and immutability consistently, explicitness follows inevitably.</p>
+      </CardContent>
+    </Card>
+
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Mutable globals are the wrong path to flexibility</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">They give you flexibility but at the cost of temporal coupling, test pollution, and race conditions. Construction-time injection gives you flexibility without the downsides.</p>
+      </CardContent>
+    </Card>
+  </div>
+</BlogPostLayout>
