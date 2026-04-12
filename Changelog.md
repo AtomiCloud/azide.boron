@@ -1,3 +1,10 @@
+## [1.8.0](https://github.com/AtomiCloud/azide.boron/compare/v1.7.0...v1.8.0) (2026-04-12)
+
+
+### ✨ Features ✨
+
+* **skill:** improve write-blog-post workflow ([1f06876](https://github.com/AtomiCloud/azide.boron/commit/1f068760c9f5a24fdd6a3bf1eddc2097536da79e))
+
 ## [1.7.0](https://github.com/AtomiCloud/azide.boron/compare/v1.6.0...v1.7.0) (2026-04-12)
 
 
