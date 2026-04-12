@@ -1,3 +1,10 @@
+## [1.7.0](https://github.com/AtomiCloud/azide.boron/compare/v1.6.0...v1.7.0) (2026-04-12)
+
+
+### ✨ Features ✨
+
+* add 7 more drafts ([0eeedba](https://github.com/AtomiCloud/azide.boron/commit/0eeedba9f4fee92b108a8050cd862e2df29bec02))
+
 ## [1.6.0](https://github.com/AtomiCloud/azide.boron/compare/v1.5.0...v1.6.0) (2026-03-08)
 
 
