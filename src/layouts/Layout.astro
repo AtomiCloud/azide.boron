@@ -22,7 +22,7 @@ const primaryHSL = hexToHSL(config.theme.primary);
 
 // Create a lighter version for dark mode by increasing lightness by 15%
 const [h, s, l] = primaryHSL.split(' ').map(v => parseFloat(v));
-const lighterL = Math.min(l + 15, 85); // Cap at 85% to avoid too bright
+const lighterL = Math.min((l ?? 50) + 15, 85); // Cap at 85% to avoid too bright
 const primaryHSLDark = `${h} ${s} ${lighterL}`;
 ---
 
@@ -72,7 +72,7 @@ const primaryHSLDark = `${h} ${s} ${lighterL}`;
     {image && <link rel="preload" as="image" href={image} />}
 
     <!-- Privacy-friendly analytics by Plausible -->
-    <script async src="https://plausible.io/js/pa-D-pChuIO1uVcJNWr_9MOx.js"></script>
+    <script is:inline async src="https://plausible.io/js/pa-D-pChuIO1uVcJNWr_9MOx.js"></script>
     <script is:inline>
       window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
       plausible.init()

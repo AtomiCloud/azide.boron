@@ -4,7 +4,7 @@
  * @param wordsPerMinute - Average reading speed (default: 225 wpm)
  * @returns Estimated reading time in minutes (rounded up, minimum 1)
  */
-export function calculateReadTime(content: string, wordsPerMinute = 225): number {
+function calculateReadTime(content: string, wordsPerMinute = 225): number {
   // Remove HTML tags and special characters for accurate word count
   const plainText = content
     .replace(/<[^>]*>/g, ' ') // Remove HTML tags

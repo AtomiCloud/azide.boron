@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "project": ["src/**/*.ts", "src/**/*.tsx"],
+  "ignoreDependencies": ["workbox-window", "wrangler"],
+  "ignore": [
+    "src/components/Footer.tsx",
+    "src/components/LegalContent.tsx",
+    "src/components/ReadingProgress.tsx",
+    "src/components/SocialShareButtons.tsx",
+    "src/lib/blog-posts.ts",
+    "src/lib/color-utils.ts",
+    "src/lib/legal-documents.ts",
+    "src/lib/read-time.ts",
+    "src/env.d.ts"
+  ],
+  "ignoreBinaries": ["tsc"]
+}

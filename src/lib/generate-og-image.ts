@@ -19,7 +19,7 @@ function loadLogo(): string {
   }
 }
 
-export interface GenerateOgImageOptions extends OgImageProps {
+interface GenerateOgImageOptions extends OgImageProps {
   width?: number;
   height?: number;
 }

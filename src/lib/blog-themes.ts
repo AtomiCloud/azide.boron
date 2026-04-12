@@ -49,10 +49,3 @@ export function getThemeForTopic(topic: string): BlogTheme {
     gradientEnd: config.theme.gradientEnd,
   };
 }
-
-/**
- * Get list of all available topics
- */
-export function getAvailableTopics(): string[] {
-  return Object.keys(topicNames);
-}
