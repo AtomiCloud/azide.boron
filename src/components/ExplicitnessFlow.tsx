@@ -36,11 +36,11 @@ export default function ExplicitnessFlow() {
           {/* Left path: Mutable globals (bad) */}
           <div className="flex flex-col items-center">
             <div className="w-full">
-              <div className="rounded-lg border-2 border-amber-400 dark:border-amber-500 bg-amber-50/60 dark:bg-amber-950/15 p-3 text-center">
+              <div className="rounded-lg border-2 border-accent bg-accent/15 p-3 text-center">
                 <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground dark:text-muted-foreground/80 mb-1 block">
                   Path A
                 </span>
-                <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300">
+                <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-accent-foreground">
                   <svg width="14" height="14" viewBox="0 0 14 14" className="flex-shrink-0">
                     <path
                       d="M7 1 L13 12 L1 12 Z"
@@ -58,13 +58,13 @@ export default function ExplicitnessFlow() {
             </div>
 
             <div className="flex justify-center my-2">
-              <svg width="16" height="16" viewBox="0 0 16 16" className="text-amber-500 dark:text-amber-400">
+              <svg width="16" height="16" viewBox="0 0 16 16" className="text-accent-foreground/60">
                 <path d="M8 0 L8 12 M3 9 L8 14 L13 9" stroke="currentColor" strokeWidth="2" fill="none" />
               </svg>
             </div>
 
             <div className="w-full">
-              <div className="rounded-lg border border-amber-200 dark:border-amber-800/30 bg-amber-50/40 dark:bg-amber-950/10 p-3 text-center">
+              <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 text-center">
                 <div className="text-[10px] sm:text-xs text-foreground/70 dark:text-foreground/60 space-y-0.5">
                   <div>Temporal coupling</div>
                   <div>Test pollution</div>
@@ -74,27 +74,20 @@ export default function ExplicitnessFlow() {
             </div>
 
             <div className="flex justify-center my-2">
-              <svg width="16" height="16" viewBox="0 0 16 16" className="text-amber-500 dark:text-amber-400">
+              <svg width="16" height="16" viewBox="0 0 16 16" className="text-accent-foreground/60">
                 <path d="M8 0 L8 12 M3 9 L8 14 L13 9" stroke="currentColor" strokeWidth="2" fill="none" />
               </svg>
             </div>
 
             {/* Blocked */}
             <div className="w-full flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-lg border-2 border-dashed border-amber-300 dark:border-amber-600 bg-amber-50/30 dark:bg-amber-950/10 p-3">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  className="text-amber-600 dark:text-amber-400 flex-shrink-0"
-                >
+              <div className="inline-flex items-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted p-3">
+                <svg width="16" height="16" viewBox="0 0 16 16" className="text-destructive flex-shrink-0">
                   <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
                   <line x1="5" y1="5" x2="11" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   <line x1="11" y1="5" x2="5" y2="11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
-                <span className="text-xs sm:text-sm font-semibold text-foreground/60 dark:text-foreground/50">
-                  Blocked
-                </span>
+                <span className="text-xs sm:text-sm font-semibold text-muted-foreground">Blocked</span>
               </div>
             </div>
           </div>
@@ -102,11 +95,11 @@ export default function ExplicitnessFlow() {
           {/* Right path: Construction-time injection (good) */}
           <div className="flex flex-col items-center">
             <div className="w-full">
-              <div className="rounded-lg border-2 border-emerald-400 dark:border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 p-3 text-center">
+              <div className="rounded-lg border-2 border-primary bg-primary/10 p-3 text-center">
                 <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground dark:text-muted-foreground/80 mb-1 block">
                   Path B
                 </span>
-                <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-primary">
                   <svg width="14" height="14" viewBox="0 0 14 14" className="flex-shrink-0">
                     <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" strokeWidth="1.5" />
                     <line x1="7" y1="4" x2="7" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -118,19 +111,17 @@ export default function ExplicitnessFlow() {
             </div>
 
             <div className="flex justify-center my-2">
-              <svg width="16" height="16" viewBox="0 0 16 16" className="text-emerald-500 dark:text-emerald-400">
+              <svg width="16" height="16" viewBox="0 0 16 16" className="text-primary/60">
                 <path d="M8 0 L8 12 M3 9 L8 14 L13 9" stroke="currentColor" strokeWidth="2" fill="none" />
               </svg>
             </div>
 
             <div className="w-full">
-              <div className="rounded-lg border border-emerald-200 dark:border-emerald-800/30 bg-emerald-50/60 dark:bg-emerald-950/10 p-3 text-center">
+              <div className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-center">
                 <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground dark:text-muted-foreground/80 mb-1 block">
                   Result
                 </span>
-                <div className="text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                  Flexibility + Immutability
-                </div>
+                <div className="text-xs sm:text-sm font-semibold text-primary">Flexibility + Immutability</div>
               </div>
             </div>
 

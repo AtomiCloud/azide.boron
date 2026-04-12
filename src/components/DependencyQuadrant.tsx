@@ -17,8 +17,8 @@ export default function DependencyQuadrant() {
           {/* Grid */}
           <div className="grid grid-cols-2 gap-3 flex-1">
             {/* Worst */}
-            <div className="rounded-lg border-2 border-red-400 dark:border-red-500 p-3 sm:p-4 bg-red-50 dark:bg-red-950/30">
-              <div className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 bg-red-100 dark:bg-red-900/50 text-[10px] sm:text-xs font-semibold text-red-700 dark:text-red-300 mb-2">
+            <div className="rounded-lg border-2 border-destructive/60 p-3 sm:p-4 bg-destructive/10">
+              <div className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 bg-destructive/15 text-[10px] sm:text-xs font-semibold text-destructive mb-2">
                 <svg width="12" height="12" viewBox="0 0 12 12" className="flex-shrink-0">
                   <circle cx="6" cy="6" r="5" fill="none" stroke="currentColor" strokeWidth="1.5" />
                   <line x1="4" y1="4" x2="8" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -31,8 +31,8 @@ export default function DependencyQuadrant() {
             </div>
 
             {/* Dangerous */}
-            <div className="rounded-lg border-2 border-amber-400 dark:border-amber-500 p-3 sm:p-4 bg-amber-50 dark:bg-amber-950/30">
-              <div className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-[10px] sm:text-xs font-semibold text-amber-700 dark:text-amber-300 mb-2">
+            <div className="rounded-lg border-2 border-accent p-3 sm:p-4 bg-accent/15">
+              <div className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 bg-accent/20 text-[10px] sm:text-xs font-semibold text-accent-foreground mb-2">
                 <svg width="12" height="12" viewBox="0 0 12 12" className="flex-shrink-0">
                   <path
                     d="M6 1 L11 10 L1 10 Z"
@@ -51,8 +51,8 @@ export default function DependencyQuadrant() {
             </div>
 
             {/* Impossible */}
-            <div className="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-3 sm:p-4 bg-gray-100 dark:bg-gray-800/40">
-              <div className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 bg-gray-200 dark:bg-gray-700/50 text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
+            <div className="rounded-lg border-2 border-dashed border-border p-3 sm:p-4 bg-muted">
+              <div className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 bg-muted text-[10px] sm:text-xs font-semibold text-muted-foreground mb-2">
                 <svg width="12" height="12" viewBox="0 0 12 12" className="flex-shrink-0">
                   <line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
