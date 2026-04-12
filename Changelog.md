@@ -1,3 +1,15 @@
+## [1.9.0](https://github.com/AtomiCloud/azide.boron/compare/v1.8.0...v1.9.0) (2026-04-12)
+
+
+### ✨ Features ✨
+
+* **blog:** add the dependency model ([34e0d2d](https://github.com/AtomiCloud/azide.boron/commit/34e0d2d6af2cc2f87f222f082d7fc30f5b5966c3))
+
+
+### 🐛 Bug Fixes 🐛
+
+* migrate diagram components to semantic color tokens ([cd4d96c](https://github.com/AtomiCloud/azide.boron/commit/cd4d96cf51f0fd77216154dbf2aaa11bdccc670e))
+
 ## [1.8.0](https://github.com/AtomiCloud/azide.boron/compare/v1.7.0...v1.8.0) (2026-04-12)
 
 
