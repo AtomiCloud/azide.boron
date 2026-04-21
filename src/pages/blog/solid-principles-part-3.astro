@@ -1,0 +1,678 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { getBlogPost } from '../../lib/blog-posts';
+
+export const frontmatter = {
+  title: 'SOLID Principles',
+  description: 'Part 3 of 8: SOLID is not arbitrary — each principle addresses a specific aspect of placing dependencies well',
+  author: 'Adelphi Liong',
+  date: '2026-04-20',
+  topic: 'tech' as const,
+  tags: ['software-design', 'solid', 'architecture', 'engineering'],
+  shareMessage: 'SOLID is not arbitrary — each principle addresses a specific aspect of placing dependencies well',
+};
+
+const post = getBlogPost('solid-principles-part-3')!;
+---
+
+<BlogPostLayout post={post}>
+  <!-- Series Intro -->
+  <p class="text-lg leading-relaxed mb-6">
+    <em>Part 3 of 8 in the <a href="/blog/software-design-philosophy-part-1" class="text-primary hover:underline">AtomiCloud Engineering Series</a>. <a href="/blog/the-dependency-model-part-2" class="text-primary hover:underline">Part 2</a> gave us the model for explicit and flexible dependencies. SOLID provides the rules for applying that model well. Each principle addresses a specific aspect: what belongs together, how to open code for extension, how to design interfaces, how to invert dependencies. These are not arbitrary rules — they follow directly from the goal of locality.</em>
+  </p>
+
+  <!-- How These Principles Emerged -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">How These Principles Emerged</h2>
+
+  <p class="mb-6">
+    These principles were not handed down from a mountain. They were discovered through pain.
+  </p>
+
+  <p class="mb-6">
+    Consider a team building an e-commerce system. At first, everything is simple: one <code class="bg-muted px-1.5 py-0.5 rounded text-sm">OrderService</code> that handles everything. It works. The team ships fast. Then features accumulate:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>The marketing team wants to add coupon codes</li>
+    <li>The warehouse needs to know about shipments</li>
+    <li>Finance needs different tax calculations per region</li>
+    <li>Customer support needs to view order history differently</li>
+  </ul>
+
+  <p class="mb-6">
+    Each feature touches the same <code class="bg-muted px-1.5 py-0.5 rounded text-sm">OrderService</code>. Each release carries risk. A bug in tax calculation breaks shipment notifications. A change to the email template breaks the payment flow. The team becomes afraid to touch the code.
+  </p>
+
+  <p class="mb-6">
+    After a while, the team notices patterns. Some changes happen together — every time marketing changes coupon logic, they also change the discount calculator. These belong together. Other changes are independent — tax calculation and email formatting never change for the same reason. These should be separate. Some code depends on stable things, while other code depends on volatile things. They should not be tightly coupled.
+  </p>
+
+  <p class="mb-6">
+    SOLID is the formalization of these observations. It tells us how to draw boundaries so that things that change together live together, things that change independently are separated, and the boundaries are explicit and swappable — exactly the properties <a href="/blog/the-dependency-model-part-2" class="text-primary hover:underline">Part 2</a> showed us we need.
+  </p>
+
+  <!-- SRP -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">S — Single Responsibility Principle</h2>
+
+  <blockquote class="border-l-4 border-primary pl-4 my-8 italic text-lg text-muted-foreground">
+    A class should have only one reason to change.
+  </blockquote>
+
+  <p class="mb-6">
+    The word "responsibility" does not mean "one thing it does." A class that handles CRUD for customers does four things, but they all change for the same reason. That is one responsibility.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-8 mb-4">Reason to Change vs Rate of Change</h3>
+
+  <p class="mb-6">
+    There are two ways to think about this. <strong>Reason to change</strong> is the intrinsic property — why would this code need to change? What external force drives it? Tax law? Marketing campaign? Database migration? <strong>Rate of change</strong> is the observable metric — how often does this code change, and does it change on the same commits as other code?
+  </p>
+
+  <p class="mb-6">
+    Rate of change is easier to observe — you can measure it from git history. But reason to change is the underlying truth. We observe rate of change because it reveals reason to change. If two pieces of code change on the same commits over and over, they probably share a reason to change.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-8 mb-4">When <code class="bg-muted px-1.5 py-0.5 rounded text-sm">render</code> Does Not Belong</h3>
+
+  <p class="mb-6">
+    Say you are building a CLI tool for managing customers. You have a <code class="bg-muted px-1.5 py-0.5 rounded text-sm">CustomerService</code> that handles CRUD operations and also renders customer data to the terminal:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class CustomerService:
+  get(id) -> Customer
+  delete(id) -> void
+  create(record) -> Customer
+  render(customer) -> ASCIITable</code></pre>
+
+  <p class="mb-6">
+    It works. Then you notice something: <code class="bg-muted px-1.5 py-0.5 rounded text-sm">get</code>, <code class="bg-muted px-1.5 py-0.5 rounded text-sm">delete</code>, and <code class="bg-muted px-1.5 py-0.5 rounded text-sm">create</code> change at the same rate. When you change one, you usually change the others — they are driven by the same external force, the business lifecycle of customers. But <code class="bg-muted px-1.5 py-0.5 rounded text-sm">render</code> changes for a completely different reason. When the marketing team wants a prettier output, or the terminal format needs to change, you are editing the same class that handles domain logic.
+  </p>
+
+  <p class="mb-6">
+    The day someone breaks <code class="bg-muted px-1.5 py-0.5 rounded text-sm">create</code> while tweaking the ASCII table format, the reason becomes visceral:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class CustomerService:
+  get(id) -> Customer
+  delete(id) -> void
+  create(record) -> Customer
+
+class CustomerRenderer:
+  render(customer) -> ASCIITable</code></pre>
+
+  <p class="mb-6">
+    Now a UI change does not touch <code class="bg-muted px-1.5 py-0.5 rounded text-sm">CustomerService</code>, and a domain change does not touch <code class="bg-muted px-1.5 py-0.5 rounded text-sm">CustomerRenderer</code>.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-8 mb-4">From Private Methods to Injectable Services</h3>
+
+  <p class="mb-6">
+    SRP leads to a surprising consequence about private methods. Consider a password checker:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class PasswordChecker:
+  check(password) -> bool:
+    hasAlpha = false
+    hasSpecial = false
+    for char in password:
+      if char.isLetter(): hasAlpha = true
+      if "!@#$%".contains(char): hasSpecial = true
+    return hasAlpha && hasSpecial</code></pre>
+
+  <p class="mb-6">
+    This is hard to read. The natural instinct is to extract private helpers:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class PasswordChecker:
+  check(password) -> bool:
+    return hasAlpha(password) && hasSpecial(password)
+
+  private hasAlpha(s) -> bool:
+    return s.matchesPattern("[a-zA-Z]")
+
+  private hasSpecial(s) -> bool:
+    return s.matchesPattern("[!@#$%]")</code></pre>
+
+  <p class="mb-6">
+    Looks cleaner. But think about it through <a href="/blog/the-dependency-model-part-2" class="text-primary hover:underline">Part 2</a>'s lens: <code class="bg-muted px-1.5 py-0.5 rounded text-sm">hasAlpha</code> and <code class="bg-muted px-1.5 py-0.5 rounded text-sm">hasSpecial</code> are now implicit dependencies of <code class="bg-muted px-1.5 py-0.5 rounded text-sm">check</code>. They do not appear in the constructor. You cannot see them from outside. You cannot test them directly — you must test them through <code class="bg-muted px-1.5 py-0.5 rounded text-sm">check</code>, which means you are always testing two things at once. And you cannot swap the behavior without editing <code class="bg-muted px-1.5 py-0.5 rounded text-sm">PasswordChecker</code>.
+  </p>
+
+  <p class="mb-6">
+    What if we follow SRP properly? <code class="bg-muted px-1.5 py-0.5 rounded text-sm">hasAlpha</code> and <code class="bg-muted px-1.5 py-0.5 rounded text-sm">hasSpecial</code> are really about string pattern matching — a different concern from password policy. They should be extracted into their own class:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class StringChecker:
+  matchesPattern(s: string, pattern: string) -> bool:
+    return s.matches(pattern)
+
+class PasswordChecker:
+  private readonly checker: IStringChecker
+
+  constructor(checker: IStringChecker):
+    this.checker = checker
+
+  check(password) -> bool:
+    return this.checker.matchesPattern(password, "[a-zA-Z]")
+        && this.checker.matchesPattern(password, "[!@#$%]")</code></pre>
+
+  <p class="mb-6">
+    Now <code class="bg-muted px-1.5 py-0.5 rounded text-sm">StringChecker</code> is independently testable, reusable, and swappable. The dependency is explicit in the constructor.
+  </p>
+
+  <p class="mb-6">
+    Here is the payoff. Say the original <code class="bg-muted px-1.5 py-0.5 rounded text-sm">StringChecker</code> uses regex for pattern matching. Six months later, someone builds a token-based parser that is three times faster. With the injectable design, you swap in the new parser without touching <code class="bg-muted px-1.5 py-0.5 rounded text-sm">PasswordChecker</code>. Its tests do not change. Its code does not change. The <code class="bg-muted px-1.5 py-0.5 rounded text-sm">StringChecker</code> was mocked in <code class="bg-muted px-1.5 py-0.5 rounded text-sm">PasswordChecker</code>'s tests all along, so the new parser only needs its own new tests.
+  </p>
+
+  <Card client:load className="bg-primary/5 border-primary my-8">
+    <CardHeader>
+      <CardTitle className="text-xl">The SRP Payoff</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p class="text-muted-foreground">
+        When you break down a function, the pieces should become peers, not subordinates. Extract to a new class, inject through the constructor, and let the caller decide the implementation.
+      </p>
+    </CardContent>
+  </Card>
+
+  <!-- OCP -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">O — Open-Closed Principle</h2>
+
+  <blockquote class="border-l-4 border-primary pl-4 my-8 italic text-lg text-muted-foreground">
+    Software entities should be open for extension, but closed for modification.
+  </blockquote>
+
+  <p class="mb-6">
+    OCP means you can change behavior without changing existing code. The simplest form is parameterization:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>// Closed -- hardcoded behavior
+function addClosed():
+  return 3 + 5
+
+// Opened -- parameterized input
+function add(a: int, b: int):
+  return a + b
+
+// Opened further -- parameterized behavior
+function combine(a: int, b: int, op: (int, int) -> int):
+  return op(a, b)</code></pre>
+
+  <p class="mb-6">
+    Each step opens the function to more extension without modification. But there are limits — if <code class="bg-muted px-1.5 py-0.5 rounded text-sm">combine</code> parameterizes everything, it is no longer a function, it is a programming language. It is an art to decide how much to open up and how much to seal.
+  </p>
+
+  <p class="mb-6">
+    To see where this leads in practice, consider writing a git wrapper library:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>git_add(git_binary: string, repo_path: string, target: string):
+  ...
+
+git_rm(git_binary: string, repo_path: string, target: string):
+  ...
+
+git_commit(git_binary: string, repo_path: string, commit_msg: string):
+  ...</code></pre>
+
+  <p class="mb-6">
+    Every function needs <code class="bg-muted px-1.5 py-0.5 rounded text-sm">git_binary</code> and <code class="bg-muted px-1.5 py-0.5 rounded text-sm">repo_path</code>. Each caller must pass the same values over and over, and must make sure they use the same variable. The library is open to extension (you can change the binary and repo path), but tiresome to use.
+  </p>
+
+  <p class="mb-6">
+    What we really want is to group the shared configuration together. And this is where objects come from — not from traditional OOP thinking about modeling the world, but from a practical need to manage shared dependencies:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class Git:
+  private readonly binary: string
+  private readonly repo: string
+
+  constructor(binary: string, repo: string):
+    this.binary = binary
+    this.repo = repo
+
+  add(target: string):
+    ...
+
+  rm(target: string):
+    ...
+
+  commit(msg: string):
+    ...</code></pre>
+
+  <Card client:load className="bg-primary/5 border-primary my-8">
+    <CardHeader>
+      <CardTitle className="text-xl">What Classes Actually Are</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p class="text-muted-foreground">
+        Class members are either <strong class="text-foreground">configuration values</strong> (timeouts, endpoints, feature flags) or <strong class="text-foreground">injected services</strong> (repositories, clients, other services). No mutable state. Every member is set once in the constructor and never modified.
+      </p>
+    </CardContent>
+  </Card>
+
+  <h3 class="text-2xl font-bold mt-8 mb-4">Why Interfaces Over Higher-Order Functions</h3>
+
+  <p class="mb-6">
+    If functions can parameterize everything, why use interfaces? Because functional-style writing, while powerful, is too free. Arguments can be functions of functions of higher-order types, which allows anyone to do anything in any order. OOP provides a more restricted framework that gives us a guideline on what to open up: interfaces.
+  </p>
+
+  <p class="mb-6">
+    Interfaces are <strong>named contracts</strong> with semantic meaning. <code class="bg-muted px-1.5 py-0.5 rounded text-sm">IEmailSender</code> tells you something that <code class="bg-muted px-1.5 py-0.5 rounded text-sm">(Email) -&gt; void</code> does not. They standardize what is opened up and constrain the degrees of freedom to exactly what is needed.
+  </p>
+
+  <p class="mb-6">
+    At AtomiCloud, methods take value types as arguments. If behavior is needed, it comes from an injected collaborator — an interface with a name, a contract, and a testable identity. This ties directly to <a href="/blog/the-dependency-model-part-2" class="text-primary hover:underline">Part 2</a>'s model: by requiring interfaces in constructors, we make dependencies both explicit and flexible.
+  </p>
+
+  <!-- LSP -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">L — Liskov Substitution Principle</h2>
+
+  <blockquote class="border-l-4 border-primary pl-4 my-8 italic text-lg text-muted-foreground">
+    Subtypes must be substitutable for their base types without altering correctness.
+  </blockquote>
+
+  <p class="mb-6">
+    LSP constrains how you implement interfaces. Every implementation must honor the full contract — including implicit behavioral promises. It is more of a warning than a creative principle, but violating it undermines everything else.
+  </p>
+
+  <p class="mb-6">
+    Consider the classic square-and-rectangle example:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>class Rectangle:
+  setWidth(w):
+    width = w
+
+  setHeight(h):
+    height = h
+
+  area() -> width * height
+
+class Square extends Rectangle:
+  setWidth(w):
+    width = w
+    height = w  // forced: must keep sides equal
+
+  setHeight(h):
+    height = h
+    width = h   // forced: must keep sides equal</code></pre>
+
+  <p class="mb-6">
+    The real-life logic of "a square is a rectangle with equal sides" seems to make the design elegant. Now imagine this code in production:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>const r = factory.newRectOrSquare();
+
+r.setWidth(5);
+r.setHeight(8);
+
+r.area(); // should be 40, but if r is a Square, it returns 64!</code></pre>
+
+  <p class="mb-6">
+    The caller had no way to know that setting width would also change height. <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Square</code> violates LSP because it breaks the implicit promise that <code class="bg-muted px-1.5 py-0.5 rounded text-sm">setWidth</code> and <code class="bg-muted px-1.5 py-0.5 rounded text-sm">setHeight</code> are independent operations.
+  </p>
+
+  <p class="mb-6">
+    But there is a deeper lesson here. Classes are concepts. Objects are real things. These are different hierarchies. Classes, interfaces, and types are ideas that do not exist at runtime. We build a hierarchy over these concepts — a graph of how ideas relate. Objects, on the other hand, are real — they interact at runtime, call each other, hold references.
+  </p>
+
+  <p class="mb-6">
+    In the real world, a square is always a rectangle. Measure any square: four right angles, four sides, yes — it is a rectangle. But the <em>concept</em> of a <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Square</code> (four equal sides, area equals side squared) is not a refinement of the <em>concept</em> of a <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Rectangle</code> (<code class="bg-muted px-1.5 py-0.5 rounded text-sm">setWidth</code> and <code class="bg-muted px-1.5 py-0.5 rounded text-sm">setHeight</code> are independent). They overlap, but they are not strictly hierarchical.
+  </p>
+
+  <blockquote class="border-l-4 border-primary pl-4 my-8 italic text-lg text-muted-foreground">
+    It is like dogs and humans. In reality, a dog and a human live together, interact daily — practically family. But the concept of a dog and the concept of a human are far apart on the tree of life. The real-world relationship (close) does not match the conceptual relationship (distant). Conflating the two is what causes LSP violations.
+  </blockquote>
+
+  <p class="mb-6">
+    This is why we prefer interface implementation over inheritance. Interfaces define explicit contracts — you know exactly what behaviors are promised. Inheritance creates implicit contracts through shared implementation, where it is dangerously easy to override behavior in ways that break the parent's promises.
+  </p>
+
+  <!-- ISP -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">I — Interface Segregation Principle</h2>
+
+  <blockquote class="border-l-4 border-primary pl-4 my-8 italic text-lg text-muted-foreground">
+    No client should be forced to depend on methods it does not use.
+  </blockquote>
+
+  <p class="mb-6">
+    ISP looks similar to SRP, but it is subtly different. SRP says "gather together things that change for the same reasons." ISP says "don't depend on more than you need."
+  </p>
+
+  <p class="mb-6">
+    The difference matters. Imagine a <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Stack</code> class with both <code class="bg-muted px-1.5 py-0.5 rounded text-sm">push</code> and <code class="bg-muted px-1.5 py-0.5 rounded text-sm">pop</code>. SRP would <em>not</em> separate them — they change for the same reason, the stack data structure. But ISP <em>would</em>, if a client only pushes and never pops:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>interface Pusher:
+  push(item) -> void
+
+interface Popper:
+  pop() -> Item
+
+class Stack implements Pusher, Popper:
+  push(item) -> void
+  pop() -> Item</code></pre>
+
+  <p class="mb-6">
+    The push-only client depends on <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Pusher</code> — a minimal contract. If <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Stack</code> adds methods, the push-only client is unaffected.
+  </p>
+
+  <blockquote class="border-l-4 border-primary pl-4 my-8 italic text-lg text-muted-foreground">
+    Design interfaces from the <strong>consumer's</strong> perspective, not the implementation's. A single object can implement many interfaces. Each interface is one lens through which to see the object, scoped to exactly what the consumer needs. This is <a href="/blog/the-dependency-model-part-2" class="text-primary hover:underline">Part 2</a>'s explicitness applied at the interface level — the dependency is not just visible, it is precisely scoped.
+  </blockquote>
+
+  <!-- DIP -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">D — Dependency Inversion Principle</h2>
+
+  <blockquote class="border-l-4 border-primary pl-4 my-8 italic text-lg text-muted-foreground">
+    High-level modules should not depend on low-level modules. Both should depend on abstractions.
+  </blockquote>
+
+  <p class="mb-6">
+    While listed last, DIP is the core principle that binds everything together. From <a href="/blog/software-design-philosophy-part-1" class="text-primary hover:underline">Part 1</a>, we identified dependencies as the root cause of coupling. From <a href="/blog/the-dependency-model-part-2" class="text-primary hover:underline">Part 2</a>, we established that dependencies should be explicit and flexible. DIP is the mechanism that makes both possible.
+  </p>
+
+  <p class="mb-6">
+    When function A calls function B directly, A depends on B. If C also uses B, then A and C are transitively coupled through B. If B changes for something A needs, C is impacted. If C needs a change to B, we must consider how it impacts A. This is the core dependency problem.
+  </p>
+
+  <p class="mb-6">
+    DIP solves it by adding an interface between them:
+  </p>
+
+  <pre class="bg-muted rounded-lg p-4 my-6 overflow-x-auto text-sm"><code>// Before: A depends directly on B
+A -> B
+
+// After: A and B both depend on interface X
+A -> X &lt;- B</code></pre>
+
+  <p class="mb-6">
+    <code class="bg-muted px-1.5 py-0.5 rounded text-sm">A</code> depends on interface <code class="bg-muted px-1.5 py-0.5 rounded text-sm">X</code>. <code class="bg-muted px-1.5 py-0.5 rounded text-sm">B</code> implements <code class="bg-muted px-1.5 py-0.5 rounded text-sm">X</code>. Now they are decoupled — <code class="bg-muted px-1.5 py-0.5 rounded text-sm">B</code> can be replaced without touching <code class="bg-muted px-1.5 py-0.5 rounded text-sm">A</code>. If <code class="bg-muted px-1.5 py-0.5 rounded text-sm">C</code> also needs <code class="bg-muted px-1.5 py-0.5 rounded text-sm">B</code>, it creates its own interface <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Y</code>, and <code class="bg-muted px-1.5 py-0.5 rounded text-sm">B</code> implements both. If it cannot, we split the underlying implementation, and neither <code class="bg-muted px-1.5 py-0.5 rounded text-sm">A</code> nor <code class="bg-muted px-1.5 py-0.5 rounded text-sm">C</code> is affected.
+  </p>
+
+  <p class="mb-6">
+    This simple inversion is what makes every other principle practical:
+  </p>
+
+  <div class="grid md:grid-cols-2 gap-6 my-8">
+    <Card client:load>
+      <CardHeader>
+        <CardTitle className="text-xl">ISP</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground"><code class="bg-muted px-1.5 py-0.5 rounded text-sm">X</code> should be minimal for what <code class="bg-muted px-1.5 py-0.5 rounded text-sm">A</code> needs.</p>
+      </CardContent>
+    </Card>
+
+    <Card client:load>
+      <CardHeader>
+        <CardTitle className="text-xl">LSP</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground"><code class="bg-muted px-1.5 py-0.5 rounded text-sm">B</code> must honor the contract of <code class="bg-muted px-1.5 py-0.5 rounded text-sm">X</code>.</p>
+      </CardContent>
+    </Card>
+
+    <Card client:load>
+      <CardHeader>
+        <CardTitle className="text-xl">OCP</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">Behavior changes by swapping the implementation behind <code class="bg-muted px-1.5 py-0.5 rounded text-sm">X</code>.</p>
+      </CardContent>
+    </Card>
+
+    <Card client:load>
+      <CardHeader>
+        <CardTitle className="text-xl">SRP</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground"><code class="bg-muted px-1.5 py-0.5 rounded text-sm">X</code> defines a focused contract for a single concern.</p>
+      </CardContent>
+    </Card>
+  </div>
+
+  <!-- Explicit and Immutable -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Explicit and Immutable</h2>
+
+  <p class="mb-6">
+    <a href="/blog/the-dependency-model-part-2" class="text-primary hover:underline">Part 2</a> established that dependencies should be explicit and flexible. The SOLID principles show us how. But there is a third property that emerges naturally when you apply these principles: <strong>immutability</strong> — references that do not change after construction.
+  </p>
+
+  <div class="grid md:grid-cols-2 gap-6 my-8">
+    <Card client:load className="border-l-4 border-destructive">
+      <CardHeader>
+        <CardTitle className="text-xl">Implicit dependencies</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <pre class="bg-muted rounded-lg p-3 overflow-x-auto text-sm"><code>class OrderService:
+  processOrder(order):
+    Logger.log("Processing order")
+    return Database.query(...)</code></pre>
+        <p class="text-muted-foreground mt-3">Where did <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Logger</code> come from? Where did <code class="bg-muted px-1.5 py-0.5 rounded text-sm">Database</code> come from?</p>
+      </CardContent>
+    </Card>
+
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Explicit and immutable</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <pre class="bg-muted rounded-lg p-3 overflow-x-auto text-sm"><code>class OrderService:
+  private readonly logger: ILogger
+  private readonly db: IDatabase
+
+  constructor(logger: ILogger, db: IDatabase):
+    this.logger = logger
+    this.db = db
+
+  processOrder(order):
+    this.logger.log("Processing order")
+    return this.db.query(...)</code></pre>
+        <p class="text-muted-foreground mt-3">Everything visible. Everything immutable.</p>
+      </CardContent>
+    </Card>
+  </div>
+
+  <p class="mb-6">
+    The constructor tells you everything: this service needs a logger and a database. No reading method bodies to discover hidden dependencies. And because the references are immutable, you know they will not change during the object's lifetime.
+  </p>
+
+  <p class="mb-6">
+    This is what you get when you follow SOLID consistently. Methods take value types as parameters and return value types. Behavior is injected via constructor. Class members are just configurable knobs — OCP in action. <a href="/blog/functional-thinking-part-4" class="text-primary hover:underline">Part 4</a> will formalize immutability as a broader principle, but here we already see it as a natural consequence of good dependency management.
+  </p>
+
+  <!-- Temporal Coupling -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Temporal Coupling</h2>
+
+  <p class="mb-6">
+    One more thing worth flagging: temporal coupling. This is when the order of operations matters, but the code does not enforce it. It is a subtle form of implicit dependency — a dependency on <em>time</em>.
+  </p>
+
+  <div class="grid md:grid-cols-2 gap-6 my-8">
+    <Card client:load className="border-l-4 border-destructive">
+      <CardHeader>
+        <CardTitle className="text-xl">Must call setTable before build</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <pre class="bg-muted rounded-lg p-3 overflow-x-auto text-sm"><code>class QueryBuilder:
+  private table: string?
+  private columns: string[]?
+
+  setTable(t: string):
+    this.table = t
+
+  setColumns(cols: string[]):
+    this.columns = cols
+
+  build() -> Query:
+    // crashes if table or columns
+    // not set!</code></pre>
+      </CardContent>
+    </Card>
+
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Constructor enforces required state</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <pre class="bg-muted rounded-lg p-3 overflow-x-auto text-sm"><code>class QueryBuilder:
+  constructor(
+    table: string,
+    columns: string[]
+  )
+
+  build() -> Query:
+    // always works</code></pre>
+      </CardContent>
+    </Card>
+  </div>
+
+  <p class="mb-6">
+    Same thing with mutable state across method calls:
+  </p>
+
+  <div class="grid md:grid-cols-2 gap-6 my-8">
+    <Card client:load className="border-l-4 border-destructive">
+      <CardHeader>
+        <CardTitle className="text-xl">Depends on call history</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <pre class="bg-muted rounded-lg p-3 overflow-x-auto text-sm"><code>class OrderService:
+  private items: Item[] = []
+
+  addItem(item: Item):
+    this.items.push(item)
+
+  calculateTotal() -> Money:
+    return sum(this.items)</code></pre>
+      </CardContent>
+    </Card>
+
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Pure function — all data in parameters</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <pre class="bg-muted rounded-lg p-3 overflow-x-auto text-sm"><code>class OrderService:
+  calculateTotal(
+    items: Item[]
+  ) -> Money:
+    return sum(items)</code></pre>
+      </CardContent>
+    </Card>
+  </div>
+
+  <p class="mb-6">
+    Now <code class="bg-muted px-1.5 py-0.5 rounded text-sm">calculateTotal</code> is a pure function. Same inputs, same outputs. No temporal coupling. <a href="/blog/functional-thinking-part-4" class="text-primary hover:underline">Part 4</a> will explore this idea much further.
+  </p>
+
+  <!-- Quick Checklist -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Quick Checklist</h2>
+
+  <div class="grid md:grid-cols-2 gap-6 my-8">
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Structural</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul class="space-y-2 text-muted-foreground">
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            <strong>SRP:</strong> Each class changes for one reason. Things that change at different rates are separate.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            <strong>OCP:</strong> Behavior changes by injecting different implementations, not editing code.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            <strong>LSP:</strong> Every implementation honors the full behavioral contract of its interface.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            <strong>ISP:</strong> Each interface contains only methods its consumers use.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            <strong>DIP:</strong> High-level modules depend on interfaces, not implementations.
+          </li>
+        </ul>
+      </CardContent>
+    </Card>
+
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Practical</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul class="space-y-2 text-muted-foreground">
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            No private methods — helpers extracted as injectable services, explicit in constructors.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            Immutable members — all fields set in constructor and never mutated.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            Methods take value types — data flows through parameters and return values.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            Explicit dependencies — can see everything by reading the constructor signature.
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5">&#9632;</span>
+            No temporal coupling — order of method calls does not matter.
+          </li>
+        </ul>
+      </CardContent>
+    </Card>
+  </div>
+
+  <!-- What Comes Next -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">What Comes Next</h2>
+
+  <p class="mb-6">
+    SOLID gives us structural rules — how to split, parameterize, and invert dependencies. But it says nothing about what code is allowed to do inside those structures. Can a function mutate its arguments? Throw exceptions? Read from global state?
+  </p>
+
+  <p class="mb-6">
+    <a href="/blog/functional-thinking-part-4" class="text-primary hover:underline">Part 4: Functional Thinking</a> introduces useful ways to think about code behavior — not as constraints, but as guidelines that make reasoning easier. Immutability, purity, and explicit error handling are patterns that improve locality, not arbitrary restrictions.
+  </p>
+
+  <!-- Key Takeaways -->
+  <h2 class="text-3xl font-bold mt-16 mb-6">Key Takeaways</h2>
+
+  <div class="flex flex-col gap-6 my-8">
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">SOLID formalizes observations about change patterns</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">These principles were not invented — they were discovered through pain. Each one addresses a specific aspect of placing dependencies well: what belongs together (SRP), how to extend without modifying (OCP), how to implement contracts safely (LSP), how to scope interfaces (ISP), and how to decouple modules (DIP).</p>
+      </CardContent>
+    </Card>
+
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">DIP is the binding principle</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">Dependency Inversion makes every other principle practical. By inserting an interface between caller and implementation, it enables swapping (OCP), scoping (ISP), contract safety (LSP), and focused design (SRP).</p>
+      </CardContent>
+    </Card>
+
+    <Card client:load className="border-l-4 border-primary">
+      <CardHeader>
+        <CardTitle className="text-xl">Immutability is a natural consequence</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p class="text-muted-foreground">When you follow SOLID consistently, references become immutable by default. Methods take value types, behavior is injected via constructor, and class members are set once and never modified. Explicitness, flexibility, and immutability reinforce each other.</p>
+      </CardContent>
+    </Card>
+  </div>
+</BlogPostLayout>

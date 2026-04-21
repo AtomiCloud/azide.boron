@@ -527,3 +527,14 @@ EOF
 ### Step 4: Confirm
 
 Share the PR URL with the user and let them know the blog post is ready for review.
+
+### Step 5: Babysit the PR
+
+After creating the PR, if the user asks to babysit it, use the **babysit-pr** skill (`/babysit-pr`) to:
+
+1. Fetch all review comments from the PR
+2. Address each comment — fixing code issues or replying to false positives
+3. Commit fixes, push, and reply to each comment
+4. Report back to the user with a summary
+
+This ensures the PR receives proper attention even if the user steps away.
