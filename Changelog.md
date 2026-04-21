@@ -1,3 +1,22 @@
+## [1.10.0](https://github.com/AtomiCloud/azide.boron/compare/v1.9.0...v1.10.0) (2026-04-21)
+
+
+### 📜 Documentation 📜
+
+* **skill:** add Satori centering guidance to blog-to-instagram ([d12c9db](https://github.com/AtomiCloud/azide.boron/commit/d12c9db44d0c08a55512b4659cfcb086180e024c))
+
+
+### ✨ Features ✨
+
+* add blog-to-instagram skill and carousel generator ([a83ea0c](https://github.com/AtomiCloud/azide.boron/commit/a83ea0c6de80d06d4eb6d9c8591d60fa44808531))
+* **blog:** add SOLID principles part 3 ([84295a9](https://github.com/AtomiCloud/azide.boron/commit/84295a918bd1e96d7fb78155ccee2d1ba95e9bed))
+* update carousel generator for dependency model part 2 ([a4a86d7](https://github.com/AtomiCloud/azide.boron/commit/a4a86d7c0bebdd399cfb81e415bbcb8099cfc01e))
+
+
+### 🐛 Bug Fixes 🐛
+
+* address PR review — slug validation, error tracking, centering ([3a40386](https://github.com/AtomiCloud/azide.boron/commit/3a4038628da75527477cf21d7b07d67790b8a8e8))
+
 ## [1.9.0](https://github.com/AtomiCloud/azide.boron/compare/v1.8.0...v1.9.0) (2026-04-12)
 
 
