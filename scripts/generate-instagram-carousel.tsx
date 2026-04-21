@@ -4,156 +4,117 @@ import satori from 'satori';
 import type { FontWeight } from 'satori';
 import sharp from 'sharp';
 
-// ── Brand palette: 3 colors with clear semantic meaning ──
-//   Brand indigo (#414C9F) — structural: section labels, key insights, brand identity
-//   Teal (#0e7490) — "good" concepts: explicit, flexible, positive outcomes
-//   Coral (#c2410c) — "bad" concepts: implicit, fixed, traps, warnings
+// ── Color palette (Okabe-Ito safe for color vision deficiency) ──
 const C = {
-  bg: '#faf7f2',
-  text: '#1c1917',
-  sub: '#57534e',
-  muted: '#a8a29e',
+  bg: '#f5f3ee',
+  text: '#1d1d1f',
+  sub: '#515154',
+  muted: '#86868b',
   white: '#ffffff',
-  brand: '#414C9F',
-  teal: '#0e7490',
-  coral: '#c2410c',
+  blue: '#0072b2',
+  orange: '#d55e00',
+  green: '#009e73',
+  amber: '#e69f00',
 };
 
-// ── Font Loading ──
-async function loadFont(font: string, weight: number) {
-  const css = await fetch(`https://fonts.googleapis.com/css2?family=${font}:wght@${weight}&display=swap`, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8) AppleWebKit/533.21.1' },
-  });
-  const m = (await css.text()).match(/src: url\((.+?)\) format\('((?:opentype|truetype|woff2?))'\)/);
-  if (!m?.[1]) throw new Error(`No font URL for ${font}:${weight}`);
-  return await fetch(m[1]).then(r => r.arrayBuffer());
+// ── Emoji Loading (Twemoji SVG → base64 data URI) ──
+const emojiCache = new Map<string, string>();
+
+async function loadEmoji(emoji: string): Promise<string> {
+  if (emojiCache.has(emoji)) return emojiCache.get(emoji)!;
+  const cp = emoji.codePointAt(0)!.toString(16);
+  const url = `https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/${cp}.svg`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch emoji ${emoji}: ${res.status}`);
+  const svg = await res.text();
+  const dataUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  emojiCache.set(emoji, dataUri);
+  return dataUri;
 }
 
-// ── Icon Components (CSS shapes, 100% Satori-compatible) ──
+type EmojiPos = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
-function iconLink(color: string) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '3px' }}>
-      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: color }} />
-      <div style={{ width: '14px', height: '2px', backgroundColor: color }} />
-      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: color }} />
-    </div>
-  );
+function emojiBackdrop(src: string, pos: EmojiPos, size: number = 180, opacity: number = 0.07) {
+  const map: Record<EmojiPos, Record<string, string>> = {
+    'top-left': { left: '40px', top: '80px' },
+    'top-right': { right: '40px', top: '80px' },
+    'bottom-left': { left: '40px', bottom: '40px' },
+    'bottom-right': { right: '40px', bottom: '40px' },
+  };
+  return <img src={src} width={size} height={size} style={{ position: 'absolute', ...map[pos], opacity }} />;
 }
 
-function iconGrid(color: string) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'center' }}>
-      <div style={{ display: 'flex', flexDirection: 'row', gap: '5px' }}>
-        <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: color }} />
-        <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: color }} />
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'row', gap: '5px' }}>
-        <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: color }} />
-        <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: color }} />
-      </div>
-    </div>
-  );
+function emojiInline(src: string, size: number = 44) {
+  return <img src={src} width={size} height={size} style={{ display: 'flex', flexShrink: 0 }} />;
 }
 
-function iconEye(color: string) {
+// ── Decorative Shapes ──
+
+function decorDiamond(x: number, y: number, size: number, color: string, opacity: number = 0.06) {
   return (
     <div
       style={{
-        display: 'flex',
-        width: '28px',
-        height: '16px',
-        borderRadius: '50%',
-        border: `2px solid ${color}`,
-        justifyContent: 'center',
-        alignItems: 'center',
+        position: 'absolute',
+        left: x,
+        top: y,
+        width: size,
+        height: size,
+        backgroundColor: color,
+        opacity,
+        transform: 'rotate(45deg)',
+        borderRadius: size * 0.1,
       }}
-    >
-      <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: color }} />
-    </div>
+    />
   );
 }
 
-function iconTool(color: string) {
+function decorCircle(x: number, y: number, size: number, color: string, opacity: number = 0.05) {
   return (
     <div
       style={{
-        display: 'flex',
-        width: '22px',
-        height: '22px',
-        borderRadius: '50%',
-        border: `2px solid ${color}`,
-        justifyContent: 'center',
-        alignItems: 'center',
+        position: 'absolute',
+        left: x,
+        top: y,
+        width: size,
+        height: size,
+        backgroundColor: color,
+        opacity,
+        borderRadius: size / 2,
       }}
-    >
-      <div style={{ display: 'flex', width: '2px', height: '10px', backgroundColor: color }} />
-    </div>
+    />
   );
 }
 
-function iconBulb(color: string) {
+function decorPlus(x: number, y: number, size: number, color: string, opacity: number = 0.07) {
+  const t = Math.max(2, size * 0.15);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: `2px solid ${color}` }} />
+    <div style={{ position: 'absolute', left: x, top: y, width: size, height: size, opacity, display: 'flex' }}>
       <div
-        style={{ width: '6px', height: '3px', backgroundColor: color, marginTop: '1px', borderRadius: '0 0 2px 2px' }}
+        style={{ position: 'absolute', left: size / 2 - t / 2, top: 0, width: t, height: size, backgroundColor: color }}
+      />
+      <div
+        style={{ position: 'absolute', left: 0, top: size / 2 - t / 2, width: size, height: t, backgroundColor: color }}
       />
     </div>
   );
 }
 
-function iconWarning(color: string) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        width: '20px',
-        height: '20px',
-        borderRadius: '3px',
-        backgroundColor: color,
-        transform: 'rotate(45deg)',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
-      <div
-        style={{ display: 'flex', fontSize: '12px', color: '#faf7f2', fontWeight: 700, transform: 'rotate(-45deg)' }}
-      >
-        !
-      </div>
-    </div>
-  );
-}
+// ── Font Loading ──
+const FONT_URLS: Record<string, string> = {
+  'Outfit:400': 'https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4E.ttf',
+  'Outfit:600': 'https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4e6yC4E.ttf',
+  'Outfit:700': 'https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4deyC4E.ttf',
+  'Plus Jakarta Sans:700':
+    'https://fonts.gstatic.com/s/plusjakartasans/v12/LDIbaomQNQcsA88c7O9yZ4KMCoOg4IA6-91aHEjcWuA_TknNSg.ttf',
+};
 
-function iconTarget(color: string) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        width: '22px',
-        height: '22px',
-        borderRadius: '50%',
-        border: `2px solid ${color}`,
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          width: '8px',
-          height: '8px',
-          borderRadius: '50%',
-          backgroundColor: color,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#faf7f2' }} />
-      </div>
-    </div>
-  );
+async function loadFont(font: string, weight: number) {
+  const key = `${font}:${weight}`;
+  const url = FONT_URLS[key];
+  if (!url) throw new Error(`No font URL for ${key}`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch font ${key}: ${res.status}`);
+  return await res.arrayBuffer();
 }
 
 // ── Shared Components ──
@@ -166,15 +127,15 @@ function brandBar(num: string, total: string) {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '30px 56px',
+        padding: '24px 56px',
       }}
     >
       <div
         style={{
           display: 'flex',
-          fontSize: '18px',
-          fontWeight: 600,
-          letterSpacing: '4px',
+          fontSize: '22px',
+          fontWeight: 700,
+          letterSpacing: '3px',
           color: C.muted,
           fontFamily: 'Outfit',
         }}
@@ -184,7 +145,7 @@ function brandBar(num: string, total: string) {
       <div
         style={{
           display: 'flex',
-          fontSize: '16px',
+          fontSize: '20px',
           fontWeight: 500,
           letterSpacing: '2px',
           color: C.muted,
@@ -197,67 +158,319 @@ function brandBar(num: string, total: string) {
   );
 }
 
-function sectionLabel(text: string, icon: any) {
+function sectionLabel(text: string) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '36px', alignItems: 'center' }}>
-      <div
-        style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center', justifyContent: 'center' }}
-      >
-        {icon}
-        <div
-          style={{
-            display: 'flex',
-            fontSize: '24px',
-            fontWeight: 600,
-            letterSpacing: '4px',
-            color: C.brand,
-            fontFamily: 'Outfit',
-            justifyContent: 'center',
-          }}
-        >
-          {text}
-        </div>
-      </div>
-      <div style={{ display: 'flex', width: '40px', height: '3px', backgroundColor: C.brand, marginTop: '10px' }}></div>
-    </div>
-  );
-}
-
-// Highlighter mark — colored bg behind text, like a real highlighter pen
-function hl(text: string, fontSize: number, fontFamily?: string) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        backgroundColor: C.brand + '22',
-        borderRadius: '8px',
-        padding: '4px 12px',
-        justifyContent: 'center',
-      }}
-    >
+    <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px', alignItems: 'center', gap: '8px' }}>
       <div
         style={{
           display: 'flex',
-          fontSize: fontSize,
-          fontWeight: 700,
-          color: C.text,
-          lineHeight: 1.3,
-          fontFamily: fontFamily,
-          justifyContent: 'center',
+          fontSize: '26px',
+          fontWeight: 600,
+          letterSpacing: '6px',
+          color: C.blue,
+          fontFamily: 'Outfit',
         }}
       >
         {text}
       </div>
+      <div style={{ display: 'flex', width: '48px', height: '2px', backgroundColor: C.blue }} />
+    </div>
+  );
+}
+
+function rule(w: string = '32px', color: string = C.muted, mb: string = '20px') {
+  return <div style={{ display: 'flex', width: w, height: '2px', backgroundColor: color, marginBottom: mb }} />;
+}
+
+// ── Diagram: Implicit vs Explicit code comparison ──
+
+function implicitExplicitDiagram() {
+  function codeColumn(
+    label: string,
+    deps: { name: string; visible: boolean }[],
+    sigColor: string,
+    borderColor: string,
+    tagText: string,
+    tagColor: string,
+  ) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+        <div
+          style={{
+            display: 'flex',
+            borderRadius: 12,
+            border: '3px solid ' + borderColor,
+            backgroundColor: C.white,
+            padding: '14px 24px',
+          }}
+        >
+          <div style={{ display: 'flex', fontSize: '24px', fontWeight: 600, color: sigColor, fontFamily: 'Outfit' }}>
+            {label}
+          </div>
+        </div>
+        <div style={{ display: 'flex', width: 3, height: 20, backgroundColor: C.muted + '40' }} />
+        <div style={{ display: 'flex', flexDirection: 'row', gap: '12px' }}>
+          {deps.map(d => (
+            <div
+              style={{
+                display: 'flex',
+                borderRadius: 10,
+                border: '2px solid ' + (d.visible ? C.green + '50' : C.orange + '50'),
+                backgroundColor: d.visible ? C.green + '10' : C.orange + '10',
+                padding: '10px 18px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '20px',
+                  fontWeight: 500,
+                  color: d.visible ? C.green : C.orange,
+                  fontFamily: 'Outfit',
+                }}
+              >
+                {d.name}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', fontSize: '20px', fontWeight: 600, color: tagColor, fontFamily: 'Outfit' }}>
+          {tagText}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{ display: 'flex', flexDirection: 'row', gap: '48px', justifyContent: 'center', alignItems: 'flex-start' }}
+    >
+      {codeColumn(
+        'processOrder(order)',
+        [
+          { name: 'Logger', visible: false },
+          { name: 'Database', visible: false },
+        ],
+        C.orange,
+        C.orange + '40',
+        "Can't see dependencies",
+        C.orange,
+      )}
+      {codeColumn(
+        'OrderService(repo, logger)',
+        [
+          { name: 'repo', visible: true },
+          { name: 'logger', visible: true },
+        ],
+        C.green,
+        C.green + '40',
+        'Everything visible',
+        C.green,
+      )}
+    </div>
+  );
+}
+
+// ── Diagram: Quadrant (3 combinations, not 4) ──
+
+function quadrantDiagram() {
+  function cell(
+    title: string,
+    subtitle: string,
+    bgColor: string,
+    borderColor: string,
+    textColor: string,
+    crossed: boolean,
+  ) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: 12,
+          border: '2px solid ' + borderColor,
+          backgroundColor: bgColor,
+          padding: '14px 16px',
+          gap: '6px',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          width: '190px',
+          height: '120px',
+        }}
+      >
+        {crossed ? (
+          <div
+            style={{
+              display: 'flex',
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              width: '240px',
+              height: '4px',
+              backgroundColor: C.orange,
+              marginLeft: '-120px',
+              marginTop: '-2px',
+              transform: 'rotate(-20deg)',
+            }}
+          />
+        ) : (
+          ''
+        )}
+        <div
+          style={{
+            display: 'flex',
+            fontSize: '22px',
+            fontWeight: 700,
+            color: textColor,
+            fontFamily: 'Outfit',
+            textAlign: 'center',
+          }}
+        >
+          {title}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            fontSize: '17px',
+            fontWeight: 400,
+            color: C.sub,
+            fontFamily: 'Outfit',
+            textAlign: 'center',
+          }}
+        >
+          {subtitle}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', width: '120px' }} />
+        <div style={{ display: 'flex', width: '190px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', fontSize: '22px', fontWeight: 600, color: C.orange, fontFamily: 'Outfit' }}>
+            FIXED
+          </div>
+        </div>
+        <div style={{ display: 'flex', width: '190px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', fontSize: '22px', fontWeight: 600, color: C.green, fontFamily: 'Outfit' }}>
+            FLEXIBLE
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'row', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', width: '120px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', fontSize: '20px', fontWeight: 600, color: C.text, fontFamily: 'Outfit' }}>
+            IMPLICIT
+          </div>
+        </div>
+        {cell('Worst case', 'Hidden + locked in', C.orange + '10', C.orange + '40', C.orange, false)}
+        {cell('Dangerous', 'Hidden + swappable', C.amber + '10', C.amber + '40', C.amber, false)}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'row', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', width: '120px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', fontSize: '20px', fontWeight: 600, color: C.text, fontFamily: 'Outfit' }}>
+            EXPLICIT
+          </div>
+        </div>
+        {cell('Impossible', 'Cannot exist', C.muted + '08', C.muted + '30', C.muted, true)}
+        {cell('The Goal', 'Visible + swappable', C.green + '10', C.green + '40', C.green, false)}
+      </div>
+    </div>
+  );
+}
+
+// ── Diagram: Fixed vs Flexible ──
+
+function fixedVsFlexibleDiagram() {
+  function column(title: string, subtitleLines: string[], code: string[], color: string) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', fontSize: '28px', fontWeight: 600, color, fontFamily: 'Outfit' }}>{title}</div>
+        <div
+          style={{
+            display: 'flex',
+            borderRadius: 12,
+            border: '2px solid ' + color + '40',
+            backgroundColor: color + '08',
+            padding: '20px 24px',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          {code.map(line => (
+            <div style={{ display: 'flex', fontSize: '20px', fontWeight: 400, color: C.text, fontFamily: 'Outfit' }}>
+              {line}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+          {subtitleLines.map(line => (
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '22px',
+                fontWeight: 400,
+                color: C.sub,
+                fontFamily: 'Outfit',
+                textAlign: 'center',
+              }}
+            >
+              {line}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'row', gap: '36px', justifyContent: 'center' }}>
+      {column(
+        'Fixed',
+        ['Hardcoded. Locked in.', 'Nothing can change it.'],
+        ['new TaxCalculator()', '// always this one'],
+        C.orange,
+      )}
+      {column(
+        'Flexible',
+        ['Received. Swappable.', 'The caller decides.'],
+        ['con\u200Bstructor(taxCalc)', '// pass anything'],
+        C.green,
+      )}
     </div>
   );
 }
 
 // ── Slide Renderer ──
 
-function renderSlide(i: number, total: number) {
+const EK = {
+  eye: '\u{1F441}',
+  link: '\u{1F517}',
+  mag: '\u{1F50D}',
+  warning: '\u{26A0}',
+  check: '\u{2705}',
+  wrench: '\u{1F527}',
+  chart: '\u{1F4CA}',
+  x: '\u{274C}',
+  fire: '\u{1F525}',
+  arrow: '\u{27A1}',
+  bulb: '\u{1F4A1}',
+  bookmark: '\u{1F516}',
+  bell: '\u{1F514}',
+  speech: '\u{1F4AC}',
+  target: '\u{1F3AF}',
+  lock: '\u{1F512}',
+  scale: '\u2696',
+} as const;
+
+function renderSlide(i: number, total: number, emojis: Record<string, string>) {
+  const E = (k: string) => emojis[k]!;
   const num = (i + 1).toString();
 
-  // SLIDE 1: HOOK
+  // SLIDE 1: HOOK — eye backdrop
   if (i === 0) {
     return (
       <div
@@ -271,19 +484,10 @@ function renderSlide(i: number, total: number) {
         }}
       >
         {brandBar(num, total.toString())}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            width: '180px',
-            height: '180px',
-            borderRadius: '90px',
-            backgroundColor: C.brand,
-            opacity: 0.05,
-            bottom: '80px',
-            right: '80px',
-          }}
-        />
+        {emojiBackdrop(E(EK.eye), 'top-right', 200, 0.5)}
+        {decorDiamond(60, 180, 22, C.blue, 0.06)}
+        {decorCircle(960, 960, 36, C.orange, 0.05)}
+        {decorPlus(900, 200, 20, C.muted, 0.07)}
         <div
           style={{
             flex: 1,
@@ -291,74 +495,68 @@ function renderSlide(i: number, total: number) {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '40px 72px',
+            padding: '16px 56px',
           }}
         >
           <div
             style={{
               display: 'flex',
-              fontSize: '28px',
-              fontWeight: 400,
+              fontSize: '26px',
+              fontWeight: 600,
               color: C.muted,
+              letterSpacing: '4px',
               marginBottom: '40px',
-              letterSpacing: '6px',
               fontFamily: 'Outfit',
-              justifyContent: 'center',
             }}
           >
-            EVERY DEVELOPER KNOWS THIS FEELING
+            PART 2 OF 8
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                display: 'flex',
-                fontSize: '68px',
-                fontWeight: 700,
-                color: C.text,
-                lineHeight: 1.15,
-                fontFamily: 'Plus Jakarta Sans',
-                justifyContent: 'center',
-              }}
-            >
-              You change
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '58px',
+              fontWeight: 700,
+              color: C.text,
+              lineHeight: 1.1,
+              fontFamily: 'Plus Jakarta Sans',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '920px',
+            }}
+          >
+            There's code inside your function you can't see.
+          </div>
+          {rule('56px', C.blue, '36px')}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', fontSize: '30px', fontWeight: 400, color: C.sub, fontFamily: 'Outfit' }}>
+              Not hidden on purpose.
             </div>
-            <div style={{ display: 'flex', transform: 'rotate(-2deg)' }}>
-              {hl('ONE thing.', 68, 'Plus Jakarta Sans')}
+            <div style={{ display: 'flex', fontSize: '30px', fontWeight: 400, color: C.sub, fontFamily: 'Outfit' }}>
+              Not because someone was careless.
             </div>
-            <div
-              style={{
-                display: 'flex',
-                fontSize: '68px',
-                fontWeight: 700,
-                color: C.text,
-                lineHeight: 1.15,
-                fontFamily: 'Plus Jakarta Sans',
-                justifyContent: 'center',
-              }}
-            >
-              Everything
+            <div style={{ display: 'flex', fontSize: '30px', fontWeight: 400, color: C.sub, fontFamily: 'Outfit' }}>
+              It's how most code is written.
             </div>
-            <div style={{ display: 'flex', transform: 'rotate(2deg)' }}>{hl('breaks.', 68, 'Plus Jakarta Sans')}</div>
           </div>
           <div
             style={{
               display: 'flex',
               fontSize: '28px',
               fontWeight: 400,
-              color: C.muted,
-              marginTop: '40px',
+              color: C.sub,
               fontFamily: 'Outfit',
               justifyContent: 'center',
+              marginTop: '24px',
             }}
           >
-            Why does this keep happening?
+            There's a framework to understand why.
           </div>
         </div>
       </div>
     );
   }
 
-  // SLIDE 2: THE REAL CAUSE
+  // SLIDE 2: CONTEXT — Two Dimensions
   if (i === 1) {
     return (
       <div
@@ -372,19 +570,9 @@ function renderSlide(i: number, total: number) {
         }}
       >
         {brandBar(num, total.toString())}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            width: '160px',
-            height: '160px',
-            borderRadius: '80px',
-            backgroundColor: C.brand,
-            opacity: 0.05,
-            top: '80px',
-            right: '80px',
-          }}
-        />
+        {emojiBackdrop(E(EK.link), 'top-right', 180, 0.5)}
+        {decorDiamond(920, 120, 20, C.blue, 0.06)}
+        {decorCircle(80, 900, 36, C.green, 0.05)}
         <div
           style={{
             flex: 1,
@@ -392,94 +580,86 @@ function renderSlide(i: number, total: number) {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '32px 72px',
+            padding: '16px 56px',
           }}
         >
-          {sectionLabel('THE REAL CAUSE', iconLink(C.brand))}
+          {sectionLabel('THE FRAMEWORK')}
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
-              gap: '32px',
-              width: '100%',
-              maxWidth: '840px',
-              alignItems: 'center',
+              fontSize: '50px',
+              fontWeight: 700,
+              color: C.text,
+              lineHeight: 1.15,
+              fontFamily: 'Plus Jakarta Sans',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '920px',
+              marginBottom: '8px',
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '40px',
-                  fontWeight: 600,
-                  color: C.text,
-                  lineHeight: 1.35,
-                  fontFamily: 'Plus Jakarta Sans',
-                  justifyContent: 'center',
-                }}
-              >
-                Your code depends on other things.
+            Every dependency has two properties
+          </div>
+          {rule('56px', C.blue, '36px')}
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '48px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', backgroundColor: C.blue + '18', borderRadius: 12, padding: '12px 32px' }}>
+                <div
+                  style={{ display: 'flex', fontSize: '36px', fontWeight: 700, color: C.blue, fontFamily: 'Outfit' }}
+                >
+                  Explicitness
+                </div>
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 400,
-                  color: C.sub,
-                  lineHeight: 1.6,
-                  justifyContent: 'center',
-                }}
-              >
-                Libraries. APIs. Databases. Configs. Other modules.
+              <div style={{ display: 'flex', fontSize: '28px', fontWeight: 400, color: C.sub, fontFamily: 'Outfit' }}>
+                Can you see it?
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '40px',
-                  fontWeight: 600,
-                  color: C.text,
-                  lineHeight: 1.35,
-                  fontFamily: 'Plus Jakarta Sans',
-                  justifyContent: 'center',
-                }}
-              >
-                When those things change...
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', backgroundColor: C.green + '18', borderRadius: 12, padding: '12px 32px' }}>
+                <div
+                  style={{ display: 'flex', fontSize: '36px', fontWeight: 700, color: C.green, fontFamily: 'Outfit' }}
+                >
+                  Flexibility
+                </div>
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 400,
-                  color: C.sub,
-                  lineHeight: 1.6,
-                  justifyContent: 'center',
-                }}
-              >
-                Your code breaks. Not because you wrote bad code.
+              <div style={{ display: 'flex', fontSize: '28px', fontWeight: 400, color: C.sub, fontFamily: 'Outfit' }}>
+                Can you change it?
               </div>
             </div>
           </div>
           <div
             style={{
               display: 'flex',
-              fontSize: '24px',
-              fontWeight: 600,
-              color: C.brand,
-              marginTop: '36px',
+              fontSize: '30px',
+              fontWeight: 400,
+              color: C.sub,
               fontFamily: 'Outfit',
               justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '760px',
             }}
           >
-            There's a simple way to think about this.
+            Together, they determine whether your code is solid or fragile.
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginTop: '20px',
+            }}
+          >
+            Let's zoom into the first one.
           </div>
         </div>
       </div>
     );
   }
 
-  // SLIDE 3: THE FRAMEWORK
+  // SLIDE 3: EXPLICITNESS — visual comparison
   if (i === 2) {
     return (
       <div
@@ -493,19 +673,9 @@ function renderSlide(i: number, total: number) {
         }}
       >
         {brandBar(num, total.toString())}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            width: '140px',
-            height: '140px',
-            borderRadius: '70px',
-            backgroundColor: C.teal,
-            opacity: 0.05,
-            bottom: '80px',
-            right: '80px',
-          }}
-        />
+        {emojiBackdrop(E(EK.mag), 'bottom-right', 180, 0.5)}
+        {decorDiamond(60, 200, 22, C.orange, 0.06)}
+        {decorCircle(940, 920, 32, C.blue, 0.05)}
         <div
           style={{
             flex: 1,
@@ -513,96 +683,60 @@ function renderSlide(i: number, total: number) {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '32px 72px',
+            padding: '16px 48px',
           }}
         >
-          {sectionLabel('THE FRAMEWORK', iconGrid(C.brand))}
+          {sectionLabel('EXPLICITNESS')}
           <div
             style={{
               display: 'flex',
-              fontSize: '40px',
+              fontSize: '44px',
               fontWeight: 700,
-              color: C.text,
-              marginBottom: '40px',
+              color: C.blue,
+              lineHeight: 1.15,
+              marginBottom: '24px',
               fontFamily: 'Plus Jakarta Sans',
               justifyContent: 'center',
             }}
           >
-            Every dependency has two sides:
+            Can you see it?
           </div>
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
-              gap: '32px',
-              width: '100%',
-              maxWidth: '840px',
-              alignItems: 'center',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.muted,
+              lineHeight: 1.5,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '800px',
+              marginBottom: '36px',
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '36px',
-                  fontWeight: 700,
-                  color: C.brand,
-                  lineHeight: 1.3,
-                  fontFamily: 'Plus Jakarta Sans',
-                  marginBottom: '8px',
-                  justifyContent: 'center',
-                }}
-              >
-                1. Can you SEE it?
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 400,
-                  color: C.sub,
-                  lineHeight: 1.65,
-                  justifyContent: 'center',
-                }}
-              >
-                Is the dependency visible in the function signature? Or is it hidden inside the code?
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '36px',
-                  fontWeight: 700,
-                  color: C.brand,
-                  lineHeight: 1.3,
-                  fontFamily: 'Plus Jakarta Sans',
-                  marginBottom: '8px',
-                  justifyContent: 'center',
-                }}
-              >
-                2. Can you CHANGE it?
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 400,
-                  color: C.sub,
-                  lineHeight: 1.65,
-                  justifyContent: 'center',
-                }}
-              >
-                Can you swap it from the outside? Or is it hardcoded inside?
-              </div>
-            </div>
+            Is the dependency declared in the interface, or buried inside the implementation?
+          </div>
+          {implicitExplicitDiagram()}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginTop: '24px',
+            }}
+          >
+            So what's the cost of hiding things?
           </div>
         </div>
       </div>
     );
   }
 
-  // SLIDE 4: CAN YOU SEE IT?
+  // SLIDE 4: LOCALITY
   if (i === 3) {
     return (
       <div
@@ -616,19 +750,9 @@ function renderSlide(i: number, total: number) {
         }}
       >
         {brandBar(num, total.toString())}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            width: '150px',
-            height: '150px',
-            borderRadius: '75px',
-            backgroundColor: C.teal,
-            opacity: 0.05,
-            bottom: '100px',
-            left: '80px',
-          }}
-        />
+        {emojiBackdrop(E(EK.target), 'bottom-left', 180, 0.5)}
+        {decorDiamond(920, 120, 20, C.blue, 0.06)}
+        {decorCircle(80, 900, 30, C.green, 0.05)}
         <div
           style={{
             flex: 1,
@@ -636,134 +760,174 @@ function renderSlide(i: number, total: number) {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '32px 72px',
+            padding: '16px 56px',
           }}
         >
-          {sectionLabel('CAN YOU SEE IT?', iconEye(C.brand))}
+          {sectionLabel('WHY IT MATTERS')}
           <div
             style={{
               display: 'flex',
+              fontSize: '46px',
+              fontWeight: 700,
+              color: C.text,
+              lineHeight: 1.15,
+              marginBottom: '28px',
+              fontFamily: 'Plus Jakarta Sans',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '900px',
+            }}
+          >
+            Explicitness creates locality
+          </div>
+          {rule('56px', C.blue, '32px')}
+          <div
+            style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'center', maxWidth: '860px' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: C.blue,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{ display: 'flex', fontSize: '20px', fontWeight: 700, color: C.white, fontFamily: 'Outfit' }}
+                >
+                  1
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div
+                  style={{ display: 'flex', fontSize: '28px', fontWeight: 600, color: C.text, fontFamily: 'Outfit' }}
+                >
+                  From the outside in
+                </div>
+                <div style={{ display: 'flex', fontSize: '26px', fontWeight: 400, color: C.sub, fontFamily: 'Outfit' }}>
+                  Read the con{'\u200B'}structor. Know everything it needs.
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: C.blue,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{ display: 'flex', fontSize: '20px', fontWeight: 700, color: C.white, fontFamily: 'Outfit' }}
+                >
+                  2
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div
+                  style={{ display: 'flex', fontSize: '28px', fontWeight: 600, color: C.text, fontFamily: 'Outfit' }}
+                >
+                  From the inside out
+                </div>
+                <div style={{ display: 'flex', fontSize: '26px', fontWeight: 400, color: C.sub, fontFamily: 'Outfit' }}>
+                  All dependencies declared. Understand in isolation.
+                </div>
+              </div>
+            </div>
+          </div>
+          {rule('56px', C.blue, '28px')}
+          <div
+            style={{
+              display: 'flex',
+              borderRadius: 14,
+              border: '3px solid ' + C.blue + '40',
+              backgroundColor: C.blue + '08',
+              padding: '20px 36px',
               flexDirection: 'column',
-              gap: '28px',
-              width: '100%',
-              maxWidth: '780px',
+              gap: '6px',
               alignItems: 'center',
             }}
           >
-            {/* EXPLICIT */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', transform: 'rotate(-2deg)' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    backgroundColor: C.teal + '22',
-                    borderRadius: '8px',
-                    padding: '4px 16px',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      fontSize: '44px',
-                      fontWeight: 700,
-                      color: C.teal,
-                      fontFamily: 'Outfit',
-                      letterSpacing: '3px',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    EXPLICIT
-                  </div>
-                </div>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 400,
-                  color: C.sub,
-                  lineHeight: 1.6,
-                  justifyContent: 'center',
-                }}
-              >
-                Visible in the signature — the input list. The caller — whoever uses it — knows exactly what to provide.
-              </div>
-            </div>
-            {/* handwritten "vs" */}
             <div
               style={{
                 display: 'flex',
-                fontSize: '22px',
-                fontWeight: 600,
-                color: C.muted,
+                fontSize: '28px',
+                fontWeight: 400,
+                color: C.sub,
                 fontFamily: 'Outfit',
-                transform: 'rotate(3deg)',
+                justifyContent: 'center',
+                textAlign: 'center',
+              }}
+            >
+              The first protects the person
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '28px',
+                fontWeight: 600,
+                color: C.blue,
+                fontFamily: 'Outfit',
                 justifyContent: 'center',
               }}
             >
-              ~ vs ~
+              using the code.
             </div>
-            {/* IMPLICIT */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', transform: 'rotate(1.5deg)' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    backgroundColor: C.coral + '22',
-                    borderRadius: '8px',
-                    padding: '4px 16px',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      fontSize: '44px',
-                      fontWeight: 700,
-                      color: C.coral,
-                      fontFamily: 'Outfit',
-                      letterSpacing: '3px',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    IMPLICIT
-                  </div>
-                </div>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 400,
-                  color: C.sub,
-                  lineHeight: 1.6,
-                  justifyContent: 'center',
-                }}
-              >
-                Buried inside the code. Hidden until something breaks.
-              </div>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '28px',
+                fontWeight: 400,
+                color: C.sub,
+                fontFamily: 'Outfit',
+                justifyContent: 'center',
+                textAlign: 'center',
+              }}
+            >
+              The second protects the person
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '28px',
+                fontWeight: 600,
+                color: C.blue,
+                fontFamily: 'Outfit',
+                justifyContent: 'center',
+              }}
+            >
+              reading the code.
             </div>
           </div>
           <div
             style={{
               display: 'flex',
-              fontSize: '24px',
+              fontSize: '28px',
               fontWeight: 400,
               color: C.sub,
-              lineHeight: 1.7,
-              marginTop: '28px',
+              fontFamily: 'Outfit',
               justifyContent: 'center',
+              marginTop: '20px',
             }}
           >
-            Explicit means no surprises. Just honest code.
+            Together, they are what locality looks like.
           </div>
         </div>
       </div>
     );
   }
 
-  // SLIDE 5: CAN YOU CHANGE IT?
+  // SLIDE 5: IMPLICIT DEEP DIVE
   if (i === 4) {
     return (
       <div
@@ -777,19 +941,9 @@ function renderSlide(i: number, total: number) {
         }}
       >
         {brandBar(num, total.toString())}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            width: '130px',
-            height: '130px',
-            borderRadius: '65px',
-            backgroundColor: C.coral,
-            opacity: 0.05,
-            top: '80px',
-            right: '80px',
-          }}
-        />
+        {emojiBackdrop(E(EK.warning), 'top-left', 180, 0.5)}
+        {decorDiamond(900, 180, 20, C.orange, 0.06)}
+        {decorCircle(80, 900, 30, C.blue, 0.05)}
         <div
           style={{
             flex: 1,
@@ -797,134 +951,115 @@ function renderSlide(i: number, total: number) {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '32px 72px',
+            padding: '16px 56px',
           }}
         >
-          {sectionLabel('CAN YOU CHANGE IT?', iconTool(C.brand))}
+          {sectionLabel('THE PROBLEM')}
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
-              gap: '28px',
-              width: '100%',
-              maxWidth: '780px',
-              alignItems: 'center',
+              fontSize: '44px',
+              fontWeight: 700,
+              color: C.orange,
+              lineHeight: 1.15,
+              marginBottom: '32px',
+              fontFamily: 'Plus Jakarta Sans',
+              justifyContent: 'center',
             }}
           >
-            {/* FLEXIBLE */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', transform: 'rotate(-1.5deg)' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    backgroundColor: C.teal + '22',
-                    borderRadius: '8px',
-                    padding: '4px 16px',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      fontSize: '44px',
-                      fontWeight: 700,
-                      color: C.teal,
-                      fontFamily: 'Outfit',
-                      letterSpacing: '3px',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    FLEXIBLE
-                  </div>
-                </div>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 400,
-                  color: C.sub,
-                  lineHeight: 1.6,
-                  justifyContent: 'center',
-                }}
-              >
-                Provided from outside. Swap it for testing, staging, or different situations.
-              </div>
+            Implicit dependencies
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              borderRadius: 14,
+              border: '3px solid ' + C.orange + '30',
+              backgroundColor: C.orange + '08',
+              padding: '28px 36px',
+              flexDirection: 'column',
+              gap: '14px',
+              marginBottom: '28px',
+            }}
+          >
+            <div style={{ display: 'flex', fontSize: '26px', fontWeight: 600, color: C.text, fontFamily: 'Outfit' }}>
+              processOrder(order)
             </div>
-            {/* handwritten "vs" */}
+            <div style={{ display: 'flex', width: '100%', height: '2px', backgroundColor: C.muted + '20' }} />
             <div
-              style={{
-                display: 'flex',
-                fontSize: '22px',
-                fontWeight: 600,
-                color: C.muted,
-                fontFamily: 'Outfit',
-                transform: 'rotate(-3deg)',
-                justifyContent: 'center',
-              }}
+              style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
             >
-              ~ vs ~
-            </div>
-            {/* FIXED */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', transform: 'rotate(2deg)' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    backgroundColor: C.coral + '22',
-                    borderRadius: '8px',
-                    padding: '4px 16px',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      fontSize: '44px',
-                      fontWeight: 700,
-                      color: C.coral,
-                      fontFamily: 'Outfit',
-                      letterSpacing: '3px',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    FIXED
-                  </div>
-                </div>
+              <div style={{ display: 'flex', fontSize: '24px', fontWeight: 400, color: C.sub, fontFamily: 'Outfit' }}>
+                Logger.log("Processing")
               </div>
               <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 400,
-                  color: C.sub,
-                  lineHeight: 1.6,
-                  justifyContent: 'center',
-                }}
+                style={{ display: 'flex', fontSize: '22px', fontWeight: 600, color: C.orange, fontFamily: 'Outfit' }}
               >
-                Hardcoded — baked in permanently. Locked in. No one can change it from the outside.
+                hidden
+              </div>
+            </div>
+            <div
+              style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <div style={{ display: 'flex', fontSize: '24px', fontWeight: 400, color: C.sub, fontFamily: 'Outfit' }}>
+                Database.query(...)
+              </div>
+              <div
+                style={{ display: 'flex', fontSize: '22px', fontWeight: 600, color: C.orange, fontFamily: 'Outfit' }}
+              >
+                hidden
               </div>
             </div>
           </div>
           <div
             style={{
               display: 'flex',
-              fontSize: '24px',
-              fontWeight: 600,
-              color: C.brand,
-              marginTop: '28px',
+              fontSize: '30px',
+              fontWeight: 400,
+              color: C.sub,
+              lineHeight: 1.5,
               fontFamily: 'Outfit',
               justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '800px',
             }}
           >
-            Everyone agrees flexibility is valuable. But here's the twist...
+            The signature says one thing. The code does another.
+          </div>
+          {rule('32px', C.orange, '20px')}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.muted,
+              lineHeight: 1.55,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '760px',
+            }}
+          >
+            You discover hidden dependencies when something breaks. Not when you read the code.
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginTop: '20px',
+            }}
+          >
+            But visibility alone isn't enough.
           </div>
         </div>
       </div>
     );
   }
 
-  // SLIDE 6: THE TWIST
+  // SLIDE 6: FLEXIBILITY
   if (i === 5) {
     return (
       <div
@@ -938,19 +1073,9 @@ function renderSlide(i: number, total: number) {
         }}
       >
         {brandBar(num, total.toString())}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            width: '170px',
-            height: '170px',
-            borderRadius: '85px',
-            backgroundColor: C.brand,
-            opacity: 0.05,
-            bottom: '60px',
-            right: '60px',
-          }}
-        />
+        {emojiBackdrop(E(EK.wrench), 'top-right', 180, 0.5)}
+        {decorDiamond(60, 200, 22, C.green, 0.06)}
+        {decorCircle(940, 920, 32, C.orange, 0.05)}
         <div
           style={{
             flex: 1,
@@ -958,46 +1083,60 @@ function renderSlide(i: number, total: number) {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '32px 72px',
+            padding: '16px 48px',
           }}
         >
-          {sectionLabel('THE TWIST', iconBulb(C.brand))}
-          <div style={{ display: 'flex', transform: 'rotate(-1.5deg)' }}>
-            {hl('Explicit + Fixed = IMPOSSIBLE', 44, 'Plus Jakarta Sans')}
-          </div>
+          {sectionLabel('FLEXIBILITY')}
           <div
             style={{
               display: 'flex',
-              fontSize: '30px',
-              fontWeight: 400,
-              color: C.sub,
-              lineHeight: 1.7,
-              marginTop: '36px',
+              fontSize: '44px',
+              fontWeight: 700,
+              color: C.green,
+              lineHeight: 1.15,
+              marginBottom: '28px',
+              fontFamily: 'Plus Jakarta Sans',
               justifyContent: 'center',
             }}
           >
-            If it's in the signature (the input list), the caller (whoever uses it) must provide it. They can provide
-            anything. So explicit automatically means flexible.
+            Can you change it?
           </div>
           <div
             style={{
               display: 'flex',
-              fontSize: '24px',
-              fontWeight: 600,
-              color: C.coral,
-              marginTop: '32px',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.muted,
+              lineHeight: 1.5,
               fontFamily: 'Outfit',
               justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '800px',
+              marginBottom: '36px',
             }}
           >
-            But not everyone wants to be explicit. They find another way.
+            Can you swap the dependency from outside, or is it locked in?
+          </div>
+          {fixedVsFlexibleDiagram()}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginTop: '24px',
+            }}
+          >
+            Now put both dimensions together.
           </div>
         </div>
       </div>
     );
   }
 
-  // SLIDE 7: THE TRAP — mutable globals: hidden + globally mutable = unpredictable
+  // SLIDE 7: IMMUTABLE SINGLETON
   if (i === 6) {
     return (
       <div
@@ -1011,20 +1150,9 @@ function renderSlide(i: number, total: number) {
         }}
       >
         {brandBar(num, total.toString())}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            width: '140px',
-            height: '140px',
-            borderRadius: '14px',
-            backgroundColor: C.coral,
-            opacity: 0.05,
-            transform: 'rotate(45deg)',
-            top: '60px',
-            left: '60px',
-          }}
-        />
+        {emojiBackdrop(E(EK.lock), 'top-right', 180, 0.5)}
+        {decorDiamond(60, 200, 22, C.amber, 0.06)}
+        {decorCircle(940, 920, 32, C.orange, 0.05)}
         <div
           style={{
             flex: 1,
@@ -1032,23 +1160,23 @@ function renderSlide(i: number, total: number) {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '32px 72px',
+            padding: '16px 56px',
           }}
         >
-          {sectionLabel('THE TRAP', iconWarning(C.coral))}
+          {sectionLabel('A SUBTLER FORM')}
           <div
             style={{
               display: 'flex',
-              fontSize: '40px',
-              fontWeight: 600,
-              color: C.text,
-              lineHeight: 1.35,
+              fontSize: '44px',
+              fontWeight: 700,
+              color: C.amber,
+              lineHeight: 1.15,
+              marginBottom: '24px',
               fontFamily: 'Plus Jakarta Sans',
               justifyContent: 'center',
-              marginBottom: '16px',
             }}
           >
-            Mutable globals.
+            The immutable singleton
           </div>
           <div
             style={{
@@ -1056,97 +1184,119 @@ function renderSlide(i: number, total: number) {
               fontSize: '30px',
               fontWeight: 400,
               color: C.sub,
-              lineHeight: 1.6,
+              lineHeight: 1.55,
+              fontFamily: 'Outfit',
               justifyContent: 'center',
-              marginBottom: '40px',
+              textAlign: 'center',
+              maxWidth: '800px',
+              marginBottom: '28px',
             }}
           >
-            They seem like a clever shortcut. But there's a catch.
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '36px',
-                  fontWeight: 700,
-                  color: C.coral,
-                  justifyContent: 'center',
-                  fontFamily: 'Outfit',
-                }}
-              >
-                No one can see them
-              </div>
-              <div
-                style={{ display: 'flex', fontSize: '24px', fontWeight: 400, color: C.sub, justifyContent: 'center' }}
-              >
-                They're invisible from the outside.
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '36px',
-                  fontWeight: 700,
-                  color: C.coral,
-                  justifyContent: 'center',
-                  fontFamily: 'Outfit',
-                }}
-              >
-                Anyone can change them
-              </div>
-              <div
-                style={{ display: 'flex', fontSize: '24px', fontWeight: 400, color: C.sub, justifyContent: 'center' }}
-              >
-                At any time. From anywhere. Without telling anyone.
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', marginTop: '40px', transform: 'rotate(1.5deg)' }}>
-            <div
-              style={{
-                display: 'flex',
-                backgroundColor: C.coral + '22',
-                borderRadius: '8px',
-                padding: '4px 16px',
-                justifyContent: 'center',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 700,
-                  color: C.coral,
-                  fontFamily: 'Outfit',
-                  letterSpacing: '2px',
-                  justifyContent: 'center',
-                }}
-              >
-                = Unpredictable
-              </div>
-            </div>
+            Not all fixed dependencies use new. Some use globals that look safe.
           </div>
           <div
             style={{
               display: 'flex',
-              fontSize: '24px',
-              fontWeight: 600,
-              color: C.brand,
-              marginTop: '32px',
-              fontFamily: 'Outfit',
-              justifyContent: 'center',
+              borderRadius: 14,
+              border: '3px solid ' + C.amber + '30',
+              backgroundColor: C.amber + '08',
+              padding: '24px 36px',
+              flexDirection: 'column',
+              gap: '10px',
+              marginBottom: '28px',
             }}
           >
-            So this path is off the table. What's left?
+            <div style={{ display: 'flex', fontSize: '24px', fontWeight: 600, color: C.text, fontFamily: 'Outfit' }}>
+              Global.TaxCalculator = new USTaxCalculator()
+            </div>
+            <div style={{ display: 'flex', width: '100%', height: '2px', backgroundColor: C.muted + '20' }} />
+            <div style={{ display: 'flex', fontSize: '22px', fontWeight: 400, color: C.sub, fontFamily: 'Outfit' }}>
+              Set once. Never changed.
+            </div>
+          </div>
+          <div
+            style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', maxWidth: '800px' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 12,
+                  height: 12,
+                  borderRadius: 6,
+                  backgroundColor: C.amber,
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ display: 'flex', fontSize: '28px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                Looks immutable. Looks safe.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 12,
+                  height: 12,
+                  borderRadius: 6,
+                  backgroundColor: C.amber,
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ display: 'flex', fontSize: '28px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                But the dependency is still fixed.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 12,
+                  height: 12,
+                  borderRadius: 6,
+                  backgroundColor: C.amber,
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ display: 'flex', fontSize: '28px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                You can't swap it for tests or staging.
+              </div>
+            </div>
+          </div>
+          {rule('32px', C.amber, '20px')}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '760px',
+            }}
+          >
+            Immutable, hidden, and locked in. The code that uses a dependency also decides which one to use.
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginTop: '20px',
+            }}
+          >
+            Now put both dimensions together.
           </div>
         </div>
       </div>
     );
   }
 
-  // SLIDE 8: THE REAL INSIGHT — remove other paths, explicitness follows
+  // SLIDE 8: THE QUADRANT
   if (i === 7) {
     return (
       <div
@@ -1160,19 +1310,9 @@ function renderSlide(i: number, total: number) {
         }}
       >
         {brandBar(num, total.toString())}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            width: '160px',
-            height: '160px',
-            borderRadius: '80px',
-            backgroundColor: C.teal,
-            opacity: 0.05,
-            bottom: '80px',
-            right: '80px',
-          }}
-        />
+        {emojiBackdrop(E(EK.chart), 'bottom-left', 180, 0.5)}
+        {decorDiamond(920, 120, 20, C.blue, 0.06)}
+        {decorCircle(80, 900, 30, C.green, 0.05)}
         <div
           style={{
             flex: 1,
@@ -1180,130 +1320,60 @@ function renderSlide(i: number, total: number) {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '32px 72px',
+            padding: '16px 56px',
           }}
         >
-          {sectionLabel('THE REAL INSIGHT', iconTarget(C.teal))}
+          {sectionLabel('THE QUADRANT')}
           <div
             style={{
               display: 'flex',
-              fontSize: '40px',
-              fontWeight: 600,
+              fontSize: '44px',
+              fontWeight: 700,
               color: C.text,
-              lineHeight: 1.35,
+              lineHeight: 1.15,
+              marginBottom: '8px',
               fontFamily: 'Plus Jakarta Sans',
               justifyContent: 'center',
-              marginBottom: '16px',
             }}
           >
-            Just one path remains.
+            Three combinations. Not four.
           </div>
           <div
             style={{
               display: 'flex',
-              fontSize: '30px',
+              fontSize: '28px',
               fontWeight: 400,
-              color: C.sub,
-              lineHeight: 1.6,
+              color: C.muted,
+              lineHeight: 1.5,
+              fontFamily: 'Outfit',
               justifyContent: 'center',
-              marginBottom: '40px',
+              textAlign: 'center',
+              maxWidth: '760px',
+              marginBottom: '36px',
             }}
           >
-            Make dependencies visible and swappable.
+            Two binary dimensions should give four quadrants. But one is impossible.
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 700,
-                  color: C.brand,
-                  justifyContent: 'center',
-                  fontFamily: 'Outfit',
-                }}
-              >
-                1.
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '36px',
-                  fontWeight: 600,
-                  color: C.text,
-                  justifyContent: 'center',
-                  fontFamily: 'Plus Jakarta Sans',
-                }}
-              >
-                Let the user provide each dependency
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 700,
-                  color: C.coral,
-                  justifyContent: 'center',
-                  fontFamily: 'Outfit',
-                }}
-              >
-                2.
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '36px',
-                  fontWeight: 600,
-                  color: C.text,
-                  justifyContent: 'center',
-                  fontFamily: 'Plus Jakarta Sans',
-                }}
-              >
-                Shut the door on shared variables
-              </div>
-            </div>
-          </div>
+          {quadrantDiagram()}
           <div
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '36px', gap: '12px' }}
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginTop: '20px',
+            }}
           >
-            <div
-              style={{ display: 'flex', fontSize: '24px', fontWeight: 400, color: C.muted, justifyContent: 'center' }}
-            >
-              You don't argue for visibility. It's what's left.
-            </div>
-            <div style={{ display: 'flex', transform: 'rotate(-1.5deg)' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  backgroundColor: C.teal + '22',
-                  borderRadius: '8px',
-                  padding: '6px 20px',
-                  justifyContent: 'center',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    fontSize: '36px',
-                    fontWeight: 700,
-                    color: C.teal,
-                    fontFamily: 'Plus Jakarta Sans',
-                    justifyContent: 'center',
-                  }}
-                >
-                  Explicitness follows
-                </div>
-              </div>
-            </div>
+            One quadrant is missing. Here's why.
           </div>
         </div>
       </div>
     );
   }
 
-  // SLIDE 9: CTA
+  // SLIDE 9: IMPOSSIBLE
   if (i === 8) {
     return (
       <div
@@ -1317,19 +1387,9 @@ function renderSlide(i: number, total: number) {
         }}
       >
         {brandBar(num, total.toString())}
-        <div
-          style={{
-            display: 'flex',
-            position: 'absolute',
-            width: '120px',
-            height: '120px',
-            borderRadius: '60px',
-            backgroundColor: C.brand,
-            opacity: 0.04,
-            top: '80px',
-            left: '80px',
-          }}
-        />
+        {emojiBackdrop(E(EK.x), 'top-right', 180, 0.5)}
+        {decorDiamond(60, 200, 22, C.orange, 0.06)}
+        {decorCircle(940, 920, 32, C.blue, 0.05)}
         <div
           style={{
             flex: 1,
@@ -1337,141 +1397,959 @@ function renderSlide(i: number, total: number) {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            padding: '32px 56px',
+            padding: '16px 56px',
+          }}
+        >
+          {sectionLabel('THE KEY INSIGHT')}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '44px',
+              fontWeight: 400,
+              color: C.sub,
+              lineHeight: 1.2,
+              marginBottom: '8px',
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+            }}
+          >
+            Explicit + Fixed =
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '60px',
+              fontWeight: 700,
+              color: C.orange,
+              lineHeight: 1.1,
+              marginBottom: '8px',
+              fontFamily: 'Plus Jakarta Sans',
+              justifyContent: 'center',
+            }}
+          >
+            Impossible
+          </div>
+          {rule('56px', C.orange, '32px')}
+          <div style={{ display: 'flex', width: '800px', flexDirection: 'column', gap: '4px', alignItems: 'stretch' }}>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '30px',
+                fontWeight: 400,
+                color: C.sub,
+                lineHeight: 1.3,
+                fontFamily: 'Outfit',
+                textAlign: 'center',
+              }}
+            >
+              If a dependency appears in the con{'\u200B'}structor, the caller provides it.
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '30px',
+                fontWeight: 400,
+                color: C.sub,
+                lineHeight: 1.3,
+                fontFamily: 'Outfit',
+                textAlign: 'center',
+              }}
+            >
+              And if the caller provides it, they can provide different things.
+            </div>
+          </div>
+          {rule('32px', C.blue, '20px')}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '34px',
+              fontWeight: 600,
+              color: C.blue,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+            }}
+          >
+            That's flexibility by definition.
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginTop: '20px',
+            }}
+          >
+            So people try a shortcut.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SLIDE 10: WEAKER VS STRONGER ARGUMENT
+  if (i === 9) {
+    return (
+      <div
+        style={{
+          width: '1080px',
+          height: '1080px',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: C.bg,
+          position: 'relative',
+        }}
+      >
+        {brandBar(num, total.toString())}
+        {emojiBackdrop(E(EK.scale), 'bottom-right', 180, 0.5)}
+        {decorDiamond(920, 120, 20, C.blue, 0.06)}
+        {decorCircle(80, 900, 30, C.green, 0.05)}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '16px 56px',
+          }}
+        >
+          {sectionLabel('TWO ROADS')}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '44px',
+              fontWeight: 700,
+              color: C.text,
+              lineHeight: 1.15,
+              marginBottom: '8px',
+              fontFamily: 'Plus Jakarta Sans',
+              justifyContent: 'center',
+            }}
+          >
+            Why talk about two properties?
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.muted,
+              lineHeight: 1.5,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '760px',
+              marginBottom: '32px',
+            }}
+          >
+            If explicitness implies flexibility, why bother separating them?
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '32px', alignItems: 'flex-start' }}>
+            <div
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', width: '380px' }}
+            >
+              <div
+                style={{ display: 'flex', backgroundColor: C.orange + '18', borderRadius: 12, padding: '12px 24px' }}
+              >
+                <div
+                  style={{ display: 'flex', fontSize: '30px', fontWeight: 700, color: C.orange, fontFamily: 'Outfit' }}
+                >
+                  Explicitness
+                </div>
+              </div>
+              <div
+                style={{ display: 'flex', fontSize: '22px', fontWeight: 600, color: C.orange, fontFamily: 'Outfit' }}
+              >
+                The weaker argument
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '24px',
+                  fontWeight: 400,
+                  color: C.sub,
+                  lineHeight: 1.5,
+                  fontFamily: 'Outfit',
+                  textAlign: 'center',
+                }}
+              >
+                "Why should I care what database it uses? That's an implementation detail."
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '24px',
+                  fontWeight: 400,
+                  color: C.muted,
+                  lineHeight: 1.5,
+                  fontFamily: 'Outfit',
+                  textAlign: 'center',
+                }}
+              >
+                Many developers push back.
+              </div>
+            </div>
+            <div
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', width: '380px' }}
+            >
+              <div style={{ display: 'flex', backgroundColor: C.green + '18', borderRadius: 12, padding: '12px 24px' }}>
+                <div
+                  style={{ display: 'flex', fontSize: '30px', fontWeight: 700, color: C.green, fontFamily: 'Outfit' }}
+                >
+                  Flexibility
+                </div>
+              </div>
+              <div style={{ display: 'flex', fontSize: '22px', fontWeight: 600, color: C.green, fontFamily: 'Outfit' }}>
+                The stronger argument
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '24px',
+                  fontWeight: 400,
+                  color: C.sub,
+                  lineHeight: 1.5,
+                  fontFamily: 'Outfit',
+                  textAlign: 'center',
+                }}
+              >
+                "I want to test this without a real database."
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '24px',
+                  fontWeight: 400,
+                  color: C.muted,
+                  lineHeight: 1.5,
+                  fontFamily: 'Outfit',
+                  textAlign: 'center',
+                }}
+              >
+                Almost no one disagrees.
+              </div>
+            </div>
+          </div>
+          {rule('56px', C.blue, '24px')}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '30px',
+              fontWeight: 600,
+              color: C.blue,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+            }}
+          >
+            Start with flexibility. Everyone wants it.
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginTop: '20px',
+            }}
+          >
+            But how you get it matters. There are two paths.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SLIDE 11: DANGEROUS PATH — Mutable globals
+  if (i === 10) {
+    return (
+      <div
+        style={{
+          width: '1080px',
+          height: '1080px',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: C.bg,
+          position: 'relative',
+        }}
+      >
+        {brandBar(num, total.toString())}
+        {emojiBackdrop(E(EK.fire), 'bottom-right', 180, 0.5)}
+        {decorDiamond(920, 120, 20, C.orange, 0.06)}
+        {decorCircle(80, 900, 30, C.green, 0.05)}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '16px 56px',
+          }}
+        >
+          {sectionLabel('THE DANGEROUS PATH')}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '44px',
+              fontWeight: 700,
+              color: C.orange,
+              lineHeight: 1.15,
+              marginBottom: '28px',
+              fontFamily: 'Plus Jakarta Sans',
+              justifyContent: 'center',
+            }}
+          >
+            Mutable globals
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '30px',
+              fontWeight: 400,
+              color: C.sub,
+              lineHeight: 1.55,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '800px',
+              marginBottom: '24px',
+            }}
+          >
+            They give you flexibility. You can swap the dependency at runtime.
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '30px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginBottom: '20px',
+            }}
+          >
+            But the cost is steep:
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 12,
+                  height: 12,
+                  borderRadius: 6,
+                  backgroundColor: C.orange,
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ display: 'flex', fontSize: '30px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                Temporal coupling
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 12,
+                  height: 12,
+                  borderRadius: 6,
+                  backgroundColor: C.orange,
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ display: 'flex', fontSize: '30px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                Test pollution
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 12,
+                  height: 12,
+                  borderRadius: 6,
+                  backgroundColor: C.orange,
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ display: 'flex', fontSize: '30px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                Race conditions
+              </div>
+            </div>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.muted,
+              lineHeight: 1.55,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '760px',
+            }}
+          >
+            Any code anywhere can change it. Your function depends on what happened before the call.
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginTop: '20px',
+            }}
+          >
+            If not globals, then what?
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SLIDE 12: INEVITABLE RESULT
+  if (i === 11) {
+    return (
+      <div
+        style={{
+          width: '1080px',
+          height: '1080px',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: C.bg,
+          position: 'relative',
+        }}
+      >
+        {brandBar(num, total.toString())}
+        {emojiBackdrop(E(EK.arrow), 'top-right', 180, 0.5)}
+        {decorDiamond(60, 200, 22, C.green, 0.06)}
+        {decorCircle(940, 920, 32, C.blue, 0.05)}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '16px 56px',
+          }}
+        >
+          {sectionLabel('THE INEVITABLE RESULT')}
+          <div
+            style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', maxWidth: '800px' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: C.blue,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{ display: 'flex', fontSize: '20px', fontWeight: 700, color: C.white, fontFamily: 'Outfit' }}
+                >
+                  1
+                </div>
+              </div>
+              <div style={{ display: 'flex', fontSize: '30px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                Start with flexibility. Everyone wants it.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: C.blue,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{ display: 'flex', fontSize: '20px', fontWeight: 700, color: C.white, fontFamily: 'Outfit' }}
+                >
+                  2
+                </div>
+              </div>
+              <div style={{ display: 'flex', fontSize: '30px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                Reject mutable state. Everyone agrees.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: C.blue,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{ display: 'flex', fontSize: '20px', fontWeight: 700, color: C.white, fontFamily: 'Outfit' }}
+                >
+                  3
+                </div>
+              </div>
+              <div style={{ display: 'flex', fontSize: '30px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                What's left? Construction-time injection.
+              </div>
+            </div>
+          </div>
+          {rule('56px', C.green, '28px')}
+          <div
+            style={{
+              display: 'flex',
+              borderRadius: 14,
+              border: '3px solid ' + C.green + '40',
+              backgroundColor: C.green + '10',
+              padding: '20px 48px',
+              flexDirection: 'column',
+              gap: '8px',
+              alignItems: 'stretch',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '30px',
+                fontWeight: 400,
+                color: C.sub,
+                lineHeight: 1.2,
+                fontFamily: 'Outfit',
+                textAlign: 'center',
+                width: '100%',
+              }}
+            >
+              The dependency is now
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '38px',
+                fontWeight: 700,
+                color: C.green,
+                lineHeight: 1.15,
+                fontFamily: 'Plus Jakarta Sans',
+                textAlign: 'center',
+                width: '100%',
+              }}
+            >
+              explicit in the con{'\u200B'}structor.
+            </div>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '30px',
+              fontWeight: 400,
+              color: C.sub,
+              lineHeight: 1.55,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '760px',
+              marginTop: '24px',
+            }}
+          >
+            You didn't set out to make it explicit. Explicitness was the inevitable result.
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.sub,
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              marginTop: '20px',
+            }}
+          >
+            Here's what to remember.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SLIDE 13: SUMMARY
+  if (i === 12) {
+    return (
+      <div
+        style={{
+          width: '1080px',
+          height: '1080px',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: C.bg,
+          position: 'relative',
+        }}
+      >
+        {brandBar(num, total.toString())}
+        {emojiBackdrop(E(EK.bulb), 'bottom-right', 180, 0.5)}
+        {decorDiamond(920, 120, 20, C.blue, 0.06)}
+        {decorCircle(80, 900, 30, C.orange, 0.05)}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '16px 56px',
+          }}
+        >
+          {sectionLabel('KEY TAKEAWAYS')}
+          <div
+            style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '860px', alignItems: 'center' }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: C.blue,
+                  fontFamily: 'Outfit',
+                  flexShrink: 0,
+                }}
+              >
+                01
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '28px',
+                  fontWeight: 400,
+                  color: C.text,
+                  lineHeight: 1.4,
+                  fontFamily: 'Outfit',
+                }}
+              >
+                Dependencies have 2 dimensions: explicitness and flexibility.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: C.blue,
+                  fontFamily: 'Outfit',
+                  flexShrink: 0,
+                }}
+              >
+                02
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '28px',
+                  fontWeight: 400,
+                  color: C.text,
+                  lineHeight: 1.4,
+                  fontFamily: 'Outfit',
+                }}
+              >
+                Explicit + Fixed is impossible. Explicitness implies flexibility.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: C.blue,
+                  fontFamily: 'Outfit',
+                  flexShrink: 0,
+                }}
+              >
+                03
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '28px',
+                  fontWeight: 400,
+                  color: C.text,
+                  lineHeight: 1.4,
+                  fontFamily: 'Outfit',
+                }}
+              >
+                Explicitness creates locality in both directions.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: C.blue,
+                  fontFamily: 'Outfit',
+                  flexShrink: 0,
+                }}
+              >
+                04
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '28px',
+                  fontWeight: 400,
+                  color: C.text,
+                  lineHeight: 1.4,
+                  fontFamily: 'Outfit',
+                }}
+              >
+                Explicitness is a consequence, not a choice.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: C.blue,
+                  fontFamily: 'Outfit',
+                  flexShrink: 0,
+                }}
+              >
+                05
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: '28px',
+                  fontWeight: 400,
+                  color: C.text,
+                  lineHeight: 1.4,
+                  fontFamily: 'Outfit',
+                }}
+              >
+                Mutable globals are the wrong path to flexibility.
+              </div>
+            </div>
+          </div>
+          {rule('56px', C.blue, '28px')}
+          <div
+            style={{
+              display: 'flex',
+              backgroundColor: C.blue + '18',
+              borderRadius: 12,
+              padding: '16px 36px',
+              flexDirection: 'column',
+              gap: '6px',
+              alignItems: 'center',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '28px',
+                fontWeight: 600,
+                color: C.blue,
+                fontFamily: 'Outfit',
+                justifyContent: 'center',
+              }}
+            >
+              Pursue flexibility + immutability.
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '28px',
+                fontWeight: 400,
+                color: C.sub,
+                fontFamily: 'Outfit',
+                justifyContent: 'center',
+              }}
+            >
+              Explicitness follows inevitably.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SLIDE 14: CTA
+  if (i === 13) {
+    return (
+      <div
+        style={{
+          width: '1080px',
+          height: '1080px',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: C.bg,
+          position: 'relative',
+        }}
+      >
+        {brandBar(num, total.toString())}
+        {decorDiamond(900, 180, 24, C.green, 0.06)}
+        {decorCircle(80, 900, 34, C.orange, 0.05)}
+        {decorPlus(940, 920, 20, C.blue, 0.06)}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '16px 56px',
           }}
         >
           <div
             style={{
               display: 'flex',
-              fontSize: '48px',
+              borderRadius: 14,
+              border: '3px solid ' + C.blue + '30',
+              backgroundColor: C.blue + '08',
+              padding: '32px 44px',
+              flexDirection: 'column',
+              gap: '12px',
+              alignItems: 'center',
+              marginBottom: '12px',
+              maxWidth: '880px',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                fontSize: '32px',
+                fontWeight: 400,
+                color: C.text,
+                lineHeight: 1.4,
+                fontFamily: 'Outfit',
+                justifyContent: 'center',
+                textAlign: 'center',
+              }}
+            >
+              Ever wanted to write a simple test, but couldn't because the code was hardcoded to a real database?
+            </div>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: '12px',
+              marginBottom: '48px',
+              justifyContent: 'center',
+            }}
+          >
+            {emojiInline(E(EK.speech), 28)}
+            <div style={{ display: 'flex', fontSize: '28px', fontWeight: 500, color: C.blue, fontFamily: 'Outfit' }}>
+              Comment your experience below
+            </div>
+          </div>
+          {rule('36px', C.muted, '20px')}
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '36px',
               fontWeight: 700,
               color: C.text,
-              marginBottom: '44px',
+              marginBottom: '28px',
               fontFamily: 'Plus Jakarta Sans',
               justifyContent: 'center',
             }}
           >
-            Liked this?
+            Found this useful?
           </div>
           <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '28px',
-              width: '100%',
-              maxWidth: '840px',
-              alignItems: 'center',
-            }}
+            style={{ display: 'flex', flexDirection: 'row', gap: '48px', alignItems: 'center', marginBottom: '48px' }}
           >
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
               <div
                 style={{
                   display: 'flex',
-                  width: '52px',
-                  height: '52px',
-                  borderRadius: '26px',
-                  backgroundColor: C.teal,
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  backgroundColor: C.green,
                   justifyContent: 'center',
                   alignItems: 'center',
                   flexShrink: 0,
                 }}
               >
-                <div
-                  style={{ display: 'flex', fontSize: '24px', fontWeight: 700, color: C.white, fontFamily: 'Outfit' }}
-                >
-                  1
-                </div>
+                {emojiInline(E(EK.bookmark), 28)}
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 600,
-                  color: C.text,
-                  fontFamily: 'Outfit',
-                  justifyContent: 'center',
-                }}
-              >
-                Save this for later
+              <div style={{ display: 'flex', fontSize: '30px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                Save this
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
               <div
                 style={{
                   display: 'flex',
-                  width: '52px',
-                  height: '52px',
-                  borderRadius: '26px',
-                  backgroundColor: C.brand,
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  backgroundColor: C.blue,
                   justifyContent: 'center',
                   alignItems: 'center',
                   flexShrink: 0,
                 }}
               >
-                <div
-                  style={{ display: 'flex', fontSize: '24px', fontWeight: 700, color: C.white, fontFamily: 'Outfit' }}
-                >
-                  2
-                </div>
+                {emojiInline(E(EK.bell), 28)}
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 600,
-                  color: C.text,
-                  fontFamily: 'Outfit',
-                  justifyContent: 'center',
-                }}
-              >
-                Follow for more insights
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '24px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  width: '52px',
-                  height: '52px',
-                  borderRadius: '26px',
-                  backgroundColor: C.coral,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <div
-                  style={{ display: 'flex', fontSize: '24px', fontWeight: 700, color: C.white, fontFamily: 'Outfit' }}
-                >
-                  3
-                </div>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  fontSize: '30px',
-                  fontWeight: 600,
-                  color: C.text,
-                  fontFamily: 'Outfit',
-                  justifyContent: 'center',
-                }}
-              >
-                Comment your experience below
+              <div style={{ display: 'flex', fontSize: '30px', fontWeight: 500, color: C.text, fontFamily: 'Outfit' }}>
+                Follow for the series
               </div>
             </div>
           </div>
+          {rule('36px', C.muted, '20px')}
           <div
             style={{
               display: 'flex',
-              fontSize: '22px',
-              fontWeight: 400,
-              color: C.muted,
-              marginTop: '44px',
+              fontSize: '32px',
+              fontWeight: 600,
+              color: C.blue,
               fontFamily: 'Outfit',
               justifyContent: 'center',
             }}
           >
-            blog.atomi.cloud
+            Next: Part 3 — SOLID Principles
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: '28px',
+              fontWeight: 400,
+              color: C.muted,
+              marginTop: '12px',
+              fontFamily: 'Outfit',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '760px',
+            }}
+          >
+            How to organize code so dependencies are placed well.
           </div>
         </div>
       </div>
@@ -1489,26 +2367,37 @@ async function main() {
     process.exit(1);
   }
 
-  const [outfit400, outfit600, jakarta700] = await Promise.all([
+  // Pre-fetch all emoji SVGs
+  const allEmojiKeys = Object.values(EK);
+  const E: Record<string, string> = {};
+  await Promise.all(
+    allEmojiKeys.map(async e => {
+      E[e] = await loadEmoji(e);
+    }),
+  );
+
+  const [jakarta700, outfit400, outfit600, outfit700] = await Promise.all([
+    loadFont('Plus Jakarta Sans', 700),
     loadFont('Outfit', 400),
     loadFont('Outfit', 600),
-    loadFont('Plus+Jakarta+Sans', 700),
+    loadFont('Outfit', 700),
   ]);
 
   const fonts = [
+    { name: 'Plus Jakarta Sans', data: jakarta700, weight: 700 as FontWeight, style: 'normal' as const },
     { name: 'Outfit', data: outfit400, weight: 400 as FontWeight, style: 'normal' as const },
     { name: 'Outfit', data: outfit600, weight: 600 as FontWeight, style: 'normal' as const },
-    { name: 'Plus Jakarta Sans', data: jakarta700, weight: 700 as FontWeight, style: 'normal' as const },
+    { name: 'Outfit', data: outfit700, weight: 700 as FontWeight, style: 'normal' as const },
   ];
 
   const outDir = join(process.cwd(), 'instagram', slug);
   if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
-  const total = 9;
+  const total = 14;
 
   for (let i = 0; i < total; i++) {
     try {
-      const el = renderSlide(i, total);
+      const el = renderSlide(i, total, E);
       const svg = await satori(el as any, { width: 1080, height: 1080, fonts });
       const png = await sharp(Buffer.from(svg)).png({ quality: 95 }).toBuffer();
       const filePath = join(outDir, `slide-${String(i + 1).padStart(2, '0')}.png`);
