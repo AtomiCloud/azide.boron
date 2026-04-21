@@ -32,24 +32,24 @@ Use `gh api` to fetch:
 
 1. **PR comments** (general comments):
 
-   ```
+   ```bash
    gh api repos/{owner}/{repo}/pulls/{pr_number}/comments
    ```
 
 2. **Review comments** (inline comments on specific lines):
 
-   ```
+   ```bash
    gh pr view {pr_number} --json comments --jq '.comments[].body'
    ```
 
 3. **Reviews** (formal reviews with state):
 
-   ```
+   ```bash
    gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews
    ```
 
 4. **Review comments with file paths** (for inline code comments):
-   ```
+   ```bash
    gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --jq '.[] | select(.path) | {id, path, line, body}'
    ```
 
@@ -78,7 +78,7 @@ For false positives or non-actionable comments:
 
 After pushing fixes, reply to each review comment:
 
-```
+```bash
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies \
   -f body="Fixed in {commit_sha} — {brief description of what was done}."
 ```

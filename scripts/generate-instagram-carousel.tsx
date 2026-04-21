@@ -1440,6 +1440,7 @@ function renderSlide(i: number, total: number, emojis: Record<string, string>) {
                 lineHeight: 1.3,
                 fontFamily: 'Outfit',
                 textAlign: 'center',
+                justifyContent: 'center',
               }}
             >
               If a dependency appears in the con{'\u200B'}structor, the caller provides it.
@@ -1453,6 +1454,7 @@ function renderSlide(i: number, total: number, emojis: Record<string, string>) {
                 lineHeight: 1.3,
                 fontFamily: 'Outfit',
                 textAlign: 'center',
+                justifyContent: 'center',
               }}
             >
               And if the caller provides it, they can provide different things.
@@ -1938,6 +1940,7 @@ function renderSlide(i: number, total: number, emojis: Record<string, string>) {
                 lineHeight: 1.2,
                 fontFamily: 'Outfit',
                 textAlign: 'center',
+                justifyContent: 'center',
                 width: '100%',
               }}
             >
@@ -1952,6 +1955,7 @@ function renderSlide(i: number, total: number, emojis: Record<string, string>) {
                 lineHeight: 1.15,
                 fontFamily: 'Plus Jakarta Sans',
                 textAlign: 'center',
+                justifyContent: 'center',
                 width: '100%',
               }}
             >
@@ -2366,6 +2370,10 @@ async function main() {
     console.error('Usage: bun run scripts/generate-instagram-carousel.tsx <slug>');
     process.exit(1);
   }
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    console.error(`Invalid slug: ${slug}`);
+    process.exit(1);
+  }
 
   // Pre-fetch all emoji SVGs
   const allEmojiKeys = Object.values(EK);
@@ -2394,6 +2402,7 @@ async function main() {
   if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
   const total = 14;
+  const failedSlides: number[] = [];
 
   for (let i = 0; i < total; i++) {
     try {
@@ -2405,7 +2414,12 @@ async function main() {
       console.log(`Generated: ${filePath}`);
     } catch (err) {
       console.error(`Error on slide ${i + 1}:`, (err as Error).message);
+      failedSlides.push(i + 1);
     }
+  }
+  if (failedSlides.length > 0) {
+    console.error(`\nFailed to generate slides: ${failedSlides.join(', ')}`);
+    process.exit(1);
   }
   console.log(`\nDone! ${total} slides saved to ${outDir}`);
 }
