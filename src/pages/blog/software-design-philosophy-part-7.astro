@@ -1,0 +1,335 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { getBlogPost } from '../../lib/blog-posts';
+import CodeBlock from '../../components/CodeBlock.astro';
+import CompositionRoot from '../../components/CompositionRoot';
+
+export const frontmatter = {
+  title: 'Wiring It Together',
+  description:
+    'Part 7 of 8: The composition root as the big bang — constructing every service once into a frozen, immutable tree',
+  author: 'Adelphi Liong',
+  date: '2026-04-16',
+  topic: 'tech' as const,
+  tags: ['software-design', 'dependency-injection', 'composition-root', 'architecture'],
+  shareMessage: 'The composition root is your application big bang',
+};
+
+const post = getBlogPost('software-design-philosophy-part-7')!;
+
+const serviceCode = `class OrderService:
+  private readonly repo: IOrderRepository
+  private readonly pricing: IPricingService
+  private readonly logger: ILogger
+  private readonly maxItems: int
+
+  constructor(repo: IOrderRepository, pricing: IPricingService, logger: ILogger, maxItems: int):
+    this.repo = repo
+    this.pricing = pricing
+    this.logger = logger
+    this.maxItems = maxItems
+
+  create(record: OrderRecord): Result<Order, OrderError>:
+    if record.items.length > this.maxItems:
+      return Err(OrderError.TooManyItems)
+    // ...`;
+
+const bigBangCode = `function main():
+  // Layer 0: Infrastructure — the raw materials
+  db = new PostgresDatabase(config.connectionString)
+  httpClient = new HttpClientAdapter()
+  logger = new ConsoleLogger()
+
+  // Layer 1: Repositories — the outward layer takes shape
+  userRepo = new UserRepository(db)
+  orderRepo = new OrderRepository(db)
+
+  // Layer 2: Domain services — the core comes to life
+  userService = new UserService(userRepo, logger)
+  orderService = new OrderService(orderRepo, userService, logger, config.maxItems)
+
+  // Layer 3: Controllers — the inward layer connects to the outside
+  userController = new UserController(userService)
+  orderController = new OrderController(orderService)
+
+  // Ignition — the universe starts running
+  app = new Application(userController, orderController)
+  app.run()`;
+---
+
+<BlogPostLayout post={post}>
+  <p class="text-lg leading-relaxed mb-6">
+    <em
+      >We have the architecture: three layers, mappers, pure domain. Now we need to actually build the thing. This part
+      shows how services are constructed, how dependencies flow, and how the entire application comes together at a
+      single point — the composition root.</em
+    >
+  </p>
+
+  <nav class="my-8 rounded-lg border border-border bg-muted/30 p-4">
+    <div class="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">The AtomiCloud Engineering Series</div>
+    <ol class="list-decimal list-inside space-y-1 text-sm">
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-1">Software Design Philosophy</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">The Dependency Model</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">SOLID Principles</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Functional Thinking</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-5">Domain-Driven Design</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-6">Three-Layer Architecture</a></li>
+      <li class="font-semibold text-primary">Wiring It Together (you are here)</li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-8">Testing and Testability</a></li>
+    </ol>
+  </nav>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Services as Stateless Objects</h2>
+
+  <p class="mb-6">
+    In <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-5">Part 5</a>, we established
+    that there are two kinds of things: services (behavior) and structures (data). Now we need to talk about how services
+    are actually built.
+  </p>
+
+  <p class="mb-6">A service is a class with two kinds of members:</p>
+
+  <ol class="list-decimal list-inside mb-6 space-y-2">
+    <li><strong>Injected collaborators</strong> — interfaces to other services, repositories, clients</li>
+    <li><strong>Configuration</strong> — immutable values like timeouts, endpoints, feature flags</li>
+  </ol>
+
+  <p class="mb-6">
+    Both are set in the constructor and never changed. The service holds no mutable state.
+  </p>
+
+  <CodeBlock lang="typescript" code={serviceCode} />
+
+  <p class="mb-6">
+    All state flows through method parameters and return values. The instance itself is frozen at construction.
+  </p>
+
+  <p class="mb-6">
+    This is the synthesis of OO structure and functional thinking from
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Part 4</a>: services are
+    objects for <strong>organization</strong>, but their methods behave like pure functions that happen to have access to
+    injected collaborators. You get the navigability and discoverability of OOP with the predictability of functional
+    code.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Big Bang</h2>
+
+  <p class="mb-6">
+    Think about the universe. At the very beginning, there was a single moment — the big bang — where all the fundamental
+    forces and particles came into existence. After that initial moment, the universe just... runs. Particles interact,
+    stars form, galaxies emerge. The laws of physics do not change after the big bang; they were all established in that
+    first instant.
+  </p>
+
+  <p class="mb-6">The composition root is your application's big bang.</p>
+
+  <p class="mb-6">
+    It is a single point — <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">main()</code>, the
+    application bootstrap, a DI container configuration — where
+    <strong>every service in the system is created, wired together, and frozen</strong>. After this moment, no new
+    services are created. No dependencies change. The structure of the universe is set.
+  </p>
+
+  <CompositionRoot client:load />
+
+  <CodeBlock lang="typescript" code={bigBangCode} />
+
+  <p class="mb-6">
+    Read it top to bottom. Infrastructure first, then repositories, then services, then controllers. Each layer receives
+    its dependencies from the layers above it. And then, at the very end,
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">app.run()</code> — the moment the universe starts.
+  </p>
+
+  <p class="mb-6">
+    After that, <strong>events drive everything</strong>. An HTTP request arrives. The framework routes it to a
+    controller. The controller calls a domain service. The service calls a repository. Data flows through the tree of
+    services that was established at the big bang. Nothing is created on the fly. Nothing is resolved lazily. The entire
+    structure was determined at startup.
+  </p>
+
+  <p class="mb-6">
+    This is powerful because it means the application's behavior is predictable. There are no surprises hidden in factory
+    methods or service locators. No "oh, this service gets created the first time someone calls it, and depending on when
+    that happens, it might get a different configuration." The entire dependency tree is visible, explicit, and frozen.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Why a Single Point</h3>
+
+  <p class="mb-6">
+    The composition root is the <strong>only place</strong> that knows about concrete types. Everything else depends on
+    interfaces. This gives you:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li><strong>Visibility</strong> — the dependency graph is readable in one place</li>
+    <li>
+      <strong>No hidden wiring</strong> — no <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">new</code>
+      calls scattered through the codebase
+    </li>
+    <li><strong>Easy swapping</strong> — changing an implementation means changing one line here</li>
+    <li><strong>Testability</strong> — tests can replace any layer by constructing a different tree</li>
+  </ul>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Trees, Not Graphs</h3>
+
+  <p class="mb-6">
+    With this approach, the dependency graph is a <strong>tree</strong> rooted at the entry point. Each service receives
+    its dependencies once, at construction, and those references never change. No lazy initialization. No conditional
+    resolution. No ambient context.
+  </p>
+
+  <p class="mb-6">
+    Compare this to traditional OOP where object A creates object B inside a method, B grabs C from a static factory, C
+    reads config from a global singleton. The dependency graph becomes a tangled web that you discover only by stepping
+    through debuggers. Here, the entire tree is visible in
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">main()</code>.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Laws and Matter</h3>
+
+  <p class="mb-6">
+    The physics analogy goes deeper than just the big bang moment. Think about what the universe actually contains after
+    that initial instant.
+  </p>
+
+  <p class="mb-6">
+    There are <strong>laws</strong> — gravity, electromagnetism, the strong and weak nuclear forces. These were
+    established at the big bang and have not changed since. They are immutable. They govern how everything interacts — how
+    particles attract and repel, how energy transfers, how matter behaves — but the laws themselves never change.
+  </p>
+
+  <p class="mb-6">
+    And there is <strong>matter and energy</strong> — particles, atoms, molecules, radiation. These flow through the
+    universe, constantly changing form. Hydrogen fuses into helium inside stars. Energy radiates outward as light.
+    Molecules combine into complex structures and break apart again. Matter and energy are never created from nothing and
+    never destroyed into nothing. They transform, rearrange, and recombine into endlessly new configurations — all
+    governed by the unchanging laws.
+  </p>
+
+  <p class="mb-6">Our system works the same way.</p>
+
+  <p class="mb-6">
+    <strong>Services are the laws.</strong> Established at the composition root, immutable thereafter. They define
+    <em>how</em> things interact — validation rules, business logic, orchestration patterns, data transformations. A
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">PostService</code> always validates titles the
+    same way. An <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">OrderService</code> always enforces
+    the item limit the same way. They do not change during the lifetime of the application. They do not acquire new
+    dependencies. They do not mutate their configuration. They simply <em>are</em>, and they govern.
+  </p>
+
+  <p class="mb-6">
+    <strong>Data structures are the matter.</strong> They flow through the system, constantly being transformed. An HTTP
+    request body enters the system as raw JSON. The controller mapper shapes it into a domain Record. The service
+    validates it, enriches it, runs it through business rules. The repository mapper reshapes it into a data model. It
+    lands in a database as a row. At no point did a service conjure this data from nothing — it arrived from the outside
+    world and was transformed at every boundary, governed by the services it passed through. And when data leaves (as an
+    API response, a notification, a log entry), it is the same information, reshaped once more for its destination.
+  </p>
+
+  <p class="mb-6">
+    After the big bang, the laws are set. Then events introduce matter into the system — an HTTP request arrives, a
+    message appears on a queue, a cron job fires. That data flows through the tree of services, being shaped and
+    transformed at each node, until it reaches its final form. New requests bring new data. The services process it the
+    same way every time, because the laws do not change. The complexity of the system comes not from the services
+    themselves — each one is simple — but from their composition, the way data flows through many simple transformations
+    to produce complex outcomes. Just as the staggering complexity of the physical universe emerges from a handful of
+    unchanging laws applied to matter over time.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Manual vs. Container</h2>
+
+  <p class="mb-6">
+    Some languages provide DI containers that automate wiring. You register interfaces and implementations, and the
+    container resolves the dependency graph for you.
+  </p>
+
+  <p class="mb-6">
+    This is fine. The principle is the same: construct everything once, up front, at the root. The container is a more
+    declarative way to express the same tree.
+  </p>
+
+  <p class="mb-6">
+    What matters is that the graph is <strong>static, visible, and assembled before business logic runs</strong>. Whether
+    you write <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">new</code> calls yourself or let a
+    container do it is a stylistic choice. Some teams prefer the explicitness of manual wiring (you can read the
+    dependency tree like a story). Others prefer the convenience of containers (less boilerplate, automatic lifetime
+    management). Both work.
+  </p>
+
+  <p class="mb-6">
+    The one thing to watch out for with containers is <strong>magic</strong>. If the container silently resolves
+    dependencies through reflection and you cannot tell, by reading code, what gets injected where — you have traded
+    explicit wiring for implicit wiring, which undermines the whole point. A good container configuration should read
+    almost as clearly as manual wiring.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Quick Checklist</h2>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Concern</th>
+          <th class="text-left p-2 font-semibold">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Service members</td>
+          <td class="p-2 align-top">Only readonly members (injected collaborators + config)</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Mutable state</td>
+          <td class="p-2 align-top">No mutable instance state on any service</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Composition root</td>
+          <td class="p-2 align-top">All services constructed at a single point</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Dependency graph</td>
+          <td class="p-2 align-top">A tree, visible in one place</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Initialization</td>
+          <td class="p-2 align-top">No lazy initialization or conditional resolution</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">After the big bang</td>
+          <td class="p-2 align-top">Events drive behavior; the service tree is frozen</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Framework isolation</td>
+          <td class="p-2 align-top">Framework types isolated behind interfaces</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">What Comes Next</h2>
+
+  <p class="mb-6">
+    The machine is built. All layers wired. The composition root assembles everything and the engine runs. Events flow
+    in, data flows through, results flow out.
+  </p>
+
+  <p class="mb-6">Now the question: how do you know it works?</p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-8"
+      >Part 8: Testing and Testability</a
+    > shows how the architecture we have built makes testing straightforward. The properties that make code testable are the
+    same properties that make it changeable. This entire series has been building toward code that is easy to test — not as
+    an afterthought, but as the proof that the design works.
+  </p>
+
+  <div class="mt-16 pt-8 border-t border-border flex justify-between text-sm">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-6"
+      >&larr; Prev: Three-Layer Architecture</a
+    >
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-8"
+      >Next: Testing and Testability &rarr;</a
+    >
+  </div>
+</BlogPostLayout>

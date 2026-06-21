@@ -1,0 +1,22 @@
+---
+interface Props {
+  code: string;
+  lang?: string;
+}
+
+const { code, lang } = Astro.props;
+---
+
+<div
+  class="article-codeblock my-6 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 overflow-hidden shadow-sm"
+>
+  {
+    lang && (
+      <div class="px-4 py-1.5 text-[11px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 bg-slate-100/60 dark:bg-slate-800/30">
+        {lang}
+      </div>
+    )
+  }
+  <pre
+    class="overflow-x-auto p-4 text-sm leading-relaxed"><code class="font-mono text-slate-800 dark:text-slate-100">{code}</code></pre>
+</div>

@@ -119,7 +119,7 @@ export function PWAInstallButton() {
 
   return (
     <div className="relative">
-      <Button onClick={handleInstallClick} variant="default" size="sm" className="gap-2">
+      <Button onClick={handleInstallClick} variant="outline" size="sm" className="gap-2 rounded-lg">
         <svg
           className="w-4 h-4"
           fill="none"

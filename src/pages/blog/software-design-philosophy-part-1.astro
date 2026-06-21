@@ -23,6 +23,20 @@ const post = getBlogPost('software-design-philosophy-part-1')!;
     <em>This is the first article in an eight-part series covering the principles, patterns, and practices behind every AtomiCloud codebase. Start here if you are new — everything else builds on these ideas.</em>
   </p>
 
+  <nav class="my-8 rounded-lg border border-border bg-muted/30 p-4">
+    <div class="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">The AtomiCloud Engineering Series</div>
+    <ol class="list-decimal list-inside space-y-1 text-sm">
+      <li class="font-semibold text-primary">Software Design Philosophy (you are here)</li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">The Dependency Model</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">SOLID Principles</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Functional Thinking</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-5">Domain-Driven Design</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-6">Three-Layer Architecture</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-7">Wiring It Together</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-8">Testing and Testability</a></li>
+    </ol>
+  </nav>
+
   <h2 class="text-3xl font-bold mt-16 mb-6">The Goal of Software</h2>
 
   <p class="mb-6">
@@ -172,4 +186,9 @@ const post = getBlogPost('software-design-philosophy-part-1')!;
   <p class="mb-6">
     The rest of this series is about how to place dependencies well. Part 2: The Dependency Model introduces a framework for thinking about dependencies — how explicit they are, how flexible they are, and what makes some dependencies better than others.
   </p>
+
+  <div class="mt-16 pt-8 border-t border-border flex justify-between text-sm">
+    <a class="text-primary hover:underline" href="/">&larr; All posts</a>
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">Next: The Dependency Model &rarr;</a>
+  </div>
 </BlogPostLayout>

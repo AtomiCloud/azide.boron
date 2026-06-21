@@ -1,0 +1,391 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { getBlogPost } from '../../lib/blog-posts';
+import CodeBlock from '../../components/CodeBlock.astro';
+import DependencyMatrix from '../../components/DependencyMatrix';
+
+export const frontmatter = {
+  title: 'The Dependency Model',
+  description:
+    'Part 2 of 8: A model for thinking about dependencies — explicit vs implicit, fixed vs flexible, and why one combination is impossible',
+  author: 'Adelphi Liong',
+  date: '2026-03-12',
+  topic: 'tech' as const,
+  tags: ['software-design', 'dependencies', 'dependency-injection', 'architecture'],
+  shareMessage: 'The two properties that make a dependency good or bad',
+};
+
+const post = getBlogPost('software-design-philosophy-part-2')!;
+---
+
+<BlogPostLayout post={post}>
+  <p class="text-lg leading-relaxed mb-6">
+    <em
+      ><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-1">Part 1</a> established locality
+      as the goal — keeping related things together, unrelated things apart. Dependencies are what connect code. This part
+      introduces a model for thinking about dependencies: two dimensions that determine whether a dependency helps or harms
+      locality.</em
+    >
+  </p>
+
+  <nav class="my-8 rounded-lg border border-border bg-muted/30 p-4">
+    <div class="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">The AtomiCloud Engineering Series</div>
+    <ol class="list-decimal list-inside space-y-1 text-sm">
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-1">Software Design Philosophy</a></li>
+      <li class="font-semibold text-primary">The Dependency Model (you are here)</li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">SOLID Principles</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Functional Thinking</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-5">Domain-Driven Design</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-6">Three-Layer Architecture</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-7">Wiring It Together</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-8">Testing and Testability</a></li>
+    </ol>
+  </nav>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Two Dimensions of Dependencies</h2>
+
+  <p class="mb-6">Every dependency has two properties worth thinking about:</p>
+
+  <ol class="list-decimal list-inside mb-6 space-y-2">
+    <li><strong>Explicitness</strong> — Is the dependency declared in the interface, or buried inside the implementation?</li>
+    <li><strong>Flexibility</strong> — Can you change the dependency's behavior from outside, or is it locked in?</li>
+  </ol>
+
+  <p class="mb-6">
+    These are mostly independent. As we will see, one particular combination turns out to be impossible in practice,
+    which reveals something deeper about why these properties matter.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Implicit vs. Explicit</h2>
+
+  <p class="mb-6">
+    An implicit dependency is one you cannot see by reading the signature. You discover it by reading the implementation
+    — or when something breaks.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`function processOrder(order):
+  Logger.log("Processing order")    // implicit: Logger not in signature
+  result = Database.query(...)      // implicit: Database not in signature
+  return result`}
+  />
+
+  <p class="mb-6">
+    The signature says <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">processOrder(order)</code>.
+    But the function also depends on <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Logger</code> and
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Database</code>. These dependencies are real —
+    the function cannot work without them — but they are invisible to callers.
+  </p>
+
+  <p class="mb-6">
+    An explicit dependency, by contrast, appears in a signature — either the constructor or the method parameters. The
+    user is <em>forced</em> to provide it. There is no way to construct the object without knowing what it needs.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`class OrderService:
+  private readonly repo: IOrderRepository
+  private readonly logger: ILogger
+
+  constructor(repo: IOrderRepository, logger: ILogger):
+    this.repo = repo
+    this.logger = logger
+
+  process(order: Order): Result<Order, OrderError>`}
+  />
+
+  <p class="mb-6">
+    The key is not merely that you <em>can</em> see the dependency — it is that the dependency is
+    <em>required at construction</em>. The user must provide a repository and a logger. There is no way to accidentally
+    forget one. Even if a dependency does not appear in a method signature, if the constructor forces the user to choose
+    it, it is still explicit.
+  </p>
+
+  <p class="mb-6">
+    This creates locality in both directions. From the outside looking in: when you use a class, you know exactly what
+    it needs. Read the constructor, and every collaborator is right there. You do not need to open the implementation to
+    hunt for hidden dependencies. From the inside looking out: when you read the implementation, you do not need to know
+    who is using this code. All dependencies are declared, so you can understand the service in isolation without
+    tracing callers to figure out what globals they might have set up.
+  </p>
+
+  <p class="mb-6">
+    Both directions matter. The first protects the person <em>using</em> the code. The second protects the person
+    <em>reading</em> the code. Together, they are what locality looks like in practice.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Fixed vs. Flexible</h2>
+
+  <p class="mb-6">
+    A fixed dependency is hardcoded. The code decides exactly what to use, and nothing outside can change that decision.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`class OrderService:
+  calculateTotal(order):
+    return new TaxCalculator().apply(order)  // fixed: always TaxCalculator`}
+  />
+
+  <p class="mb-6">
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">OrderService</code> creates its own
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">TaxCalculator</code>. No other code can provide a
+    different implementation. If you want different tax logic, you must edit this class. Intercepting this would require
+    monkey-patching or reflection — hacks that work around the design rather than with it.
+  </p>
+
+  <p class="mb-6">A subtler form of fixedness is the immutable singleton:</p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`Global.TaxCalculator = new USTaxCalculator()   // set once, never changed
+
+class OrderService:
+  calculateTotal(order):
+    return Global.TaxCalculator.apply(order)   // fixed via immutable global`}
+  />
+
+  <p class="mb-6">
+    The global is immutable, so the dependency cannot be swapped at runtime. You <em>could</em> change it by mutating the
+    global — but that introduces mutable global state, which is worse (we will get to that). If the global is truly
+    immutable, the dependency is fixed. Either way, it locks in decisions: the code that uses a dependency also decides
+    which dependency to use.
+  </p>
+
+  <p class="mb-6">
+    A flexible dependency can be changed from outside. The code receives its dependency rather than creating it.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`class OrderService:
+  private readonly taxCalculator: ITaxCalculator
+
+  constructor(taxCalculator: ITaxCalculator):
+    this.taxCalculator = taxCalculator
+
+  calculateTotal(order):
+    return this.taxCalculator.apply(order)`}
+  />
+
+  <p class="mb-6">
+    Now <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">OrderService</code> does not decide which
+    calculator to use. The caller decides. Pass a
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">USTaxCalculator</code> for US orders, a
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">UKTaxCalculator</code> for UK orders, a
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">MockTaxCalculator</code> for tests. The code that
+    uses the dependency is separated from the code that selects it.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Three Combinations, Not Four</h2>
+
+  <p class="mb-6">
+    You might expect four quadrants from two binary dimensions. But one combination does not exist in practice.
+  </p>
+
+  <DependencyMatrix client:load />
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold"></th>
+          <th class="text-left p-2 font-semibold">Fixed</th>
+          <th class="text-left p-2 font-semibold">Flexible</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><strong>Implicit</strong></td>
+          <td class="p-2 align-top">Worst: Cannot see it, cannot change it</td>
+          <td class="p-2 align-top">Dangerous: Can change it, cannot see it</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><strong>Explicit</strong></td>
+          <td class="p-2 align-top"><em>(does not exist)</em></td>
+          <td class="p-2 align-top"><strong>Goal</strong>: Can see it, can change it</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mb-6">
+    <strong>Implicit and fixed</strong> is the worst case. You cannot see
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Logger</code> or
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Database</code> in the signature, and you cannot
+    swap them. This is the breeding ground for fragility — hidden connections that break unexpectedly.
+  </p>
+
+  <p class="mb-6">
+    <strong>Implicit and flexible</strong> is what you get with mutable globals. You can change
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">config.retries</code> at runtime, so the
+    dependency is flexible. But you cannot see that
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">makeRequest</code> depends on
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">config</code> by reading its signature. Any code
+    anywhere can modify <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">config</code>, and the
+    function's behavior depends on what happened before the call. This can actually be worse than the fixed case — you
+    have the illusion of flexibility without any clarity about what depends on what.
+  </p>
+
+  <p class="mb-6">
+    <strong>Explicit and fixed</strong> does not exist. Think about it: if a dependency is explicit — it appears in the
+    constructor signature — then the caller <em>provides</em> it. And if the caller provides it, they can provide
+    different things. That is flexibility by definition.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`class OrderService:
+  constructor(calculator: TaxCalculator):  // explicit...
+    this.calculator = calculator
+
+// But now the caller can provide anything:
+service1 = new OrderService(new USTaxCalculator())
+service2 = new OrderService(new UKTaxCalculator())`}
+  />
+
+  <p class="mb-6">
+    Even if the constructor takes a concrete type instead of an interface, the caller still chooses
+    <em>which instance</em>. The moment you force the user to provide a dependency, you have made it flexible. This is
+    why there are only three meaningful combinations.
+  </p>
+
+  <p class="mb-6">
+    <strong>Explicit and flexible</strong> is the goal. The dependency appears in the constructor. The implementation is
+    received rather than created. You can see it, mock it, swap it. This is what dependency injection achieves.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Why Two Properties If One Implies the Other?</h2>
+
+  <p class="mb-6">
+    If explicitness implies flexibility, why bother talking about two separate properties? Because the argument
+    <em>for</em> each one lands differently, and the path from flexibility to explicitness is not as obvious as it seems.
+  </p>
+
+  <p class="mb-6">
+    <strong>Explicitness is the weaker argument.</strong> Many developers will push back. "Why should I care what database
+    the service uses? That is an implementation detail. Hide it. Encapsulate it." This is the traditional OOP
+    encapsulation argument, and it sounds reasonable on the surface. Plenty of experienced engineers will tell you that
+    good code <em>hides</em> its dependencies, not exposes them.
+  </p>
+
+  <p class="mb-6">
+    <strong>Flexibility is the stronger argument.</strong> Almost no one argues against the ability to swap
+    implementations. "I want to test this without a real database." "I want to use a different payment processor in
+    staging." "I want to mock this for local development." These are practical needs that everyone understands and agrees
+    with.
+  </p>
+
+  <p class="mb-6">So start with flexibility. Everyone wants it. The question is: how do you get it?</p>
+
+  <p class="mb-6">There are two roads to flexible dependencies. The first is mutable globals:</p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`var emailClient = new SmtpClient()
+
+function sendWelcome(user):
+  emailClient.send(user.email, "Welcome!")
+
+// In tests:
+emailClient = new MockEmailClient()    // swap it out
+sendWelcome(testUser)`}
+  />
+
+  <p class="mb-6">
+    This works. The dependency is flexible — you can swap
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">emailClient</code> before calling
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">sendWelcome</code>. You can use a real SMTP
+    client in production and a mock in tests. Flexibility achieved.
+  </p>
+
+  <p class="mb-6">
+    But now you have mutable global state. Any code anywhere can reassign
+    <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">emailClient</code> at any time. The function's
+    behavior depends on what happened to the global <em>before</em> the call. You are back to temporal coupling — the
+    combinatorial explosion from
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Part 4</a>. In a real
+    codebase, this leads to test pollution (one test swaps the global, forgets to reset it, the next test fails
+    mysteriously), race conditions in concurrent code, and "who changed this?" debugging sessions.
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Part 4</a> makes the case that
+    <strong>immutability</strong> is a property we need — references should not change after they are set. If you accept
+    that, then mutable globals are off the table. The global-swap route to flexibility is closed.
+  </p>
+
+  <p class="mb-6">
+    What is left? The only way to get flexible dependencies <em>without</em> mutable state is to provide them at
+    construction time:
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`class WelcomeService:
+  private readonly client: IEmailClient
+
+  constructor(client: IEmailClient):
+    this.client = client
+
+  sendWelcome(user):
+    this.client.send(user.email, "Welcome!")`}
+  />
+
+  <p class="mb-6">
+    The dependency is flexible — the caller chooses which client to provide. The reference is immutable — it is set once
+    in the constructor and never changes. And look: the dependency is now explicit in the constructor signature. You did
+    not set out to make it explicit. You set out to make it flexible without mutable state, and explicitness was the
+    inevitable result.
+  </p>
+
+  <p class="mb-6">
+    This is why we talk about two properties even though one implies the other. The <em>motivation</em> is flexibility
+    and immutability — properties that everyone already wants. Explicitness is not a separate goal you must argue for. It
+    is a <em>consequence</em> of pursuing the other two. The developers who resist explicitness on principle will still
+    end up with it if they pursue flexibility and immutability consistently.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Quick Checklist</h2>
+
+  <p class="mb-6"><strong>Explicitness:</strong></p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>All collaborators appear in constructor signatures</li>
+    <li>All per-call data appears in method parameters</li>
+    <li>No implicit reads from globals, singletons, or static state</li>
+    <li>Reading a constructor tells you everything a class needs</li>
+    <li>Users of the class know all dependencies without reading implementation</li>
+    <li>Implementers know all dependencies without knowing who calls them</li>
+  </ul>
+
+  <p class="mb-6"><strong>Flexibility:</strong></p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>Services depend on interfaces, not concrete implementations</li>
+    <li>Dependencies are received, not created (no <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">new</code> in methods)</li>
+    <li>No static method calls to access collaborators</li>
+    <li>No singletons accessed globally</li>
+  </ul>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">What Comes Next</h2>
+
+  <p class="mb-6">
+    We have a model for thinking about dependencies. But how do we organize code so that dependencies are placed well?
+    What belongs together? What belongs apart?
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">Part 3: SOLID Principles</a>
+    gives us the rules. SOLID is not arbitrary — each principle addresses a specific aspect of placing dependencies well.
+    Single Responsibility governs cohesion. Dependency Inversion enables flexibility. Interface Segregation ensures
+    explicitness is meaningful.
+  </p>
+
+  <div class="mt-16 pt-8 border-t border-border flex justify-between text-sm">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-1">&larr; Prev: Software Design Philosophy</a>
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">Next: SOLID Principles &rarr;</a>
+  </div>
+</BlogPostLayout>

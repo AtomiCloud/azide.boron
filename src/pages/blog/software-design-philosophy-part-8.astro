@@ -1,0 +1,808 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { getBlogPost } from '../../lib/blog-posts';
+import CodeBlock from '../../components/CodeBlock.astro';
+import TestPyramid from '../../components/TestPyramid';
+
+export const frontmatter = {
+  title: 'Testing and Testability',
+  description:
+    'Part 8 of 8: How the architecture makes testing straightforward — and why testability is the proof the design works',
+  author: 'Adelphi Liong',
+  date: '2026-04-23',
+  topic: 'tech' as const,
+  tags: ['software-design', 'testing', 'test-pyramid', 'architecture', 'best-practices'],
+  shareMessage: 'If code is hard to test, it is hard to change',
+};
+
+const post = getBlogPost('software-design-philosophy-part-8')!;
+---
+
+<BlogPostLayout post={post}>
+  <p class="text-lg leading-relaxed mb-6">
+    <em>Parts 1 through 7 gave us philosophy, principles, patterns, domain modeling, architecture, and wiring. Now the question: how do you know it works? This part shows how the design we have built makes testing straightforward — and why testability is the proof that the design works.</em>
+  </p>
+
+  <nav class="my-8 rounded-lg border border-border bg-muted/30 p-4">
+    <div class="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">The AtomiCloud Engineering Series</div>
+    <ol class="list-decimal list-inside space-y-1 text-sm">
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-1">Software Design Philosophy</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">The Dependency Model</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">SOLID Principles</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Functional Thinking</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-5">Domain-Driven Design</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-6">Three-Layer Architecture</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-7">Wiring It Together</a></li>
+      <li class="font-semibold text-primary">Testing and Testability (you are here)</li>
+    </ol>
+  </nav>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Why Tests Matter</h2>
+
+  <p class="mb-6">
+    A test is a second opinion on your code. You write a function, you think it works. Then you write a test that calls it with specific inputs and checks the output. The test asks a different question: not "how do I make this work?" but "does this actually do what I intended?"
+  </p>
+
+  <p class="mb-6">
+    A codebase without tests has been checked exactly once — by the person who wrote it, in the moment they wrote it. The off-by-one error, the forgotten null check, the empty list case — these slip through because one pass is never enough.
+  </p>
+
+  <p class="mb-6">
+    A codebase with tests is checked twice, and the second check runs every time the code changes. Forever.
+  </p>
+
+  <p class="mb-6">
+    But here is the deeper insight, and the real reason this part exists: <strong>if code is hard to test, it is hard to change.</strong> The properties that make code testable — explicit dependencies, immutable data, pure functions, injectable collaborators — are exactly the properties that make code changeable. This entire series has been building toward code that is easy to test. Testing is not a separate concern bolted on at the end. It is the <em>proof</em> that the design works.
+  </p>
+
+  <p class="mb-6">
+    If you followed the principles in Parts 1 through 7 and your code is still hard to test, something went wrong in the design. The tests are telling you.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Test Pyramid</h2>
+
+  <p class="mb-6">
+    The shape of the pyramid is deliberate: tests at the bottom are fast, cheap, and numerous. Tests at the top are slow, expensive, and few. A healthy codebase has many unit tests, some functional tests, fewer integration tests, and a minimal number of SIT/E2E tests.
+  </p>
+
+  <TestPyramid client:load />
+
+  <p class="mb-6">
+    Why this shape? Because of a fundamental trade-off: the higher you go, the more confidence you get that the <em>whole system</em> works, but the slower and more brittle the tests become. A unit test runs in milliseconds and tells you exactly which function broke. An E2E test takes seconds (or minutes), and when it fails, you have to hunt through the entire stack to find the culprit.
+  </p>
+
+  <p class="mb-6">
+    The strategy is to <strong>catch as many bugs as possible at the lowest level</strong>, then use higher levels only for things that lower levels cannot catch.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Unit Tests (White-Box)</h2>
+
+  <p class="mb-6">
+    Unit tests examine the internal implementation of a single class or function. They are white-box — they know about dependencies and internal structure. They aim for <strong>100% code coverage</strong>.
+  </p>
+
+  <p class="mb-6">
+    "Wait, 100%? Isn't that excessive?" you might ask. If your classes follow SRP and your methods are small, 100% coverage is trivially achievable. If it feels excessive, the class is probably doing too much. The difficulty of achieving coverage is, itself, design feedback.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The AAA Pattern</h3>
+
+  <p class="mb-6">
+    Every unit test follows the same structure: <strong>Arrange, Act, Assert</strong>.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`describe('PostService', () => {
+  it('should create post with valid title', () => {
+    // Arrange - set up the subject, inputs, expected result
+    const mockRepo = { create: r => Ok(mockPost) };
+    const subject = new PostService(mockRepo);
+    const input = { title: 'Hello', description: 'World', tags: [] };
+    const expected = mockPost;
+
+    // Act - call the method under test
+    const actual = subject.create(input);
+
+    // Assert - verify the result
+    actual.should.eql(Ok(expected));
+  });
+});`}
+  />
+
+  <p class="mb-6">
+    Three sections. Clean separation. When a test is hard to write, the difficulty usually shows up in <strong>Arrange</strong> — too many collaborators to set up, too much state to initialize. That is not the test's fault. That is the design telling you the class has too many responsibilities.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Standard Variable Names</h3>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Variable</th>
+          <th class="text-left p-2 font-semibold">Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">subject</code></td>
+          <td class="p-2 align-top">The class or function being tested</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">input</code></td>
+          <td class="p-2 align-top">Data passed to the method</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">expected</code></td>
+          <td class="p-2 align-top">What we expect the method to return</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">actual</code></td>
+          <td class="p-2 align-top">What the method actually returned</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mb-6">
+    These names are a team convention. When every test uses them, you can scan any test file and immediately know what is being tested, what goes in, and what comes out.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Triangulation: Why One Test Case Is Not Enough</h3>
+
+  <p class="mb-6">
+    A single test case can pass by accident. Maybe the implementation is hardcoded. Maybe it works for that specific input but breaks for everything else. Multiple cases prove correctness.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`// Risky - single case, might pass by luck
+it('should format status', () => {
+  expect(formatStatus('pending')).toBe('Pending');
+});
+
+// Better - multiple cases prove the logic
+it.each([
+  ['pending', 'Pending'],
+  ['running', 'Running'],
+  ['completed', 'Completed'],
+])('should format status (%s -> %s)', (input, expected) => {
+  expect(formatStatus(input)).toBe(expected);
+});`}
+  />
+
+  <p class="mb-6">
+    This is triangulation: you test enough cases that the only reasonable implementation is the correct one.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Deterministic and Fast</h3>
+
+  <p class="mb-6">
+    Unit tests must be:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li><strong>Deterministic</strong> — no random values, no real time, no network calls</li>
+    <li><strong>Fast</strong> — no sleep, no real IO</li>
+    <li><strong>Isolated</strong> — no dependence on test execution order</li>
+  </ul>
+
+  <CodeBlock
+    lang="typescript"
+    code={`// Wrong - uses real time (slow, flaky)
+it('should timeout after 1 second', async () => {
+  const start = Date.now();
+  await subject.doSomething();
+  const elapsed = Date.now() - start;
+  expect(elapsed).toBeGreaterThan(1000);
+});
+
+// Right - uses injected clock (fast, deterministic)
+it('should timeout after deadline', () => {
+  const clock = new FakeClock();
+  const subject = new Service(clock);
+  clock.tick(1001);
+  subject.hasTimedOut().should.be.true();
+});`}
+  />
+
+  <p class="mb-6">
+    If you need to inject a clock to test time-dependent logic, that is not a hack — that is the architecture working as intended. The dependency was injectable (<a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">Part 2</a>), so the test controls it.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Functional Tests (Black-Box)</h2>
+
+  <p class="mb-6">
+    Functional tests verify behavior through interfaces. They do not know about internal implementation — only inputs, outputs, and the interface contract.
+  </p>
+
+  <p class="mb-6">
+    Here is the key difference from unit tests: a unit test knows <em>how</em> the class works internally. A functional test only knows <em>what</em> the interface promises.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Why Functional Tests Matter</h3>
+
+  <p class="mb-6">
+    Functional tests validate the <strong>interface contract</strong>. They ensure that any implementation of the interface will behave correctly. This is the essence of the Liskov Substitution Principle from <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">Part 3</a> — if you can swap implementations, you need tests that prove the swap is safe.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`// The interface
+interface IPaymentProcessor:
+  charge(amount: Money, card: CardDetails): Result<Charge, PaymentError>
+  refund(chargeId: string): Result<Refund, PaymentError>
+
+// Functional test - tests the contract, not a specific implementation
+describe('IPaymentProcessor contract', () => {
+  function testContract(createProcessor: () => IPaymentProcessor):
+    it('should charge successfully with valid card', () => {
+      const subject = createProcessor();
+      const result = subject.charge(Money.usd(10.00), validCard);
+      expect(result.isOk()).toBe(true);
+    });
+
+    it('should reject invalid card', () => {
+      const subject = createProcessor();
+      const result = subject.charge(Money.usd(10.00), invalidCard);
+      expect(result.isErr()).toBe(true);
+    });
+
+  // Run the same contract tests against every implementation
+  describe('StripePaymentProcessor', () => {
+    testContract(() => new StripePaymentProcessor(mockStripeClient));
+  });
+
+  describe('PaypalPaymentProcessor', () => {
+    testContract(() => new PaypalPaymentProcessor(mockPaypalClient));
+  });
+});`}
+  />
+
+  <p class="mb-6">
+    The beauty of this pattern: when you add a new implementation of <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">IPaymentProcessor</code>, you just add one more <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">describe</code> block pointing at the existing contract tests. The contract is defined once and verified everywhere.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Unit vs Functional: Same Folder, Different Purpose</h3>
+
+  <p class="mb-6">
+    In practice, unit tests and functional tests often live side by side. But they test different things:
+  </p>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Aspect</th>
+          <th class="text-left p-2 font-semibold">Unit Test</th>
+          <th class="text-left p-2 font-semibold">Functional Test</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Knows about</td>
+          <td class="p-2 align-top">Internal dependencies</td>
+          <td class="p-2 align-top">Interface only</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Mocks</td>
+          <td class="p-2 align-top">All collaborators</td>
+          <td class="p-2 align-top">All collaborators</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Validates</td>
+          <td class="p-2 align-top">Implementation correctness</td>
+          <td class="p-2 align-top">Contract correctness</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Fails when</td>
+          <td class="p-2 align-top">Code bug</td>
+          <td class="p-2 align-top">Interface violation</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Integration Tests</h2>
+
+  <p class="mb-6">
+    Integration tests verify that modules work together correctly. Unit tests prove individual pieces work; integration tests prove the <strong>wiring</strong> between them works.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Why Not Just Unit Tests?</h3>
+
+  <p class="mb-6">
+    You can have a perfectly unit-tested <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">PostService</code> and a perfectly unit-tested <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">PostgresPostRepository</code>, and the system still breaks because the mapper between them has a subtle bug — maybe it swaps <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">created_at</code> and <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">updated_at</code>, or serializes tags as a comma-separated string instead of JSON.
+  </p>
+
+  <p class="mb-6">
+    Integration tests catch these boundary errors.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Example: Repository + Database</h3>
+
+  <CodeBlock
+    lang="typescript"
+    code={`describe('PostgresPostRepository', () => {
+  let db: TestDatabase;
+  let subject: PostgresPostRepository;
+
+  beforeAll(async () => {
+    db = await TestDatabase.create(); // Testcontainers spins up a real Postgres
+    subject = new PostgresPostRepository(db.connection);
+  });
+
+  afterAll(async () => {
+    await db.cleanup();
+  });
+
+  it('should persist and retrieve', async () => {
+    const created = await subject.create(validRecord);
+    const retrieved = await subject.get(created.value.principal.id);
+    retrieved.value.should.eql(created.value);
+  });
+});`}
+  />
+
+  <p class="mb-6">
+    Integration tests test <strong>module by module</strong>, not the whole system at once. A repository integration test uses a real database (via Testcontainers) but still mocks external services like payment processors.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">SIT (System Integration Testing)</h2>
+
+  <p class="mb-6">
+    SIT tests the <strong>entire system from a client's perspective</strong>. This is fully black-box testing: the test has no access to the code, no coverage metrics, only the external API. It is, essentially, what your users will experience — minus the UI.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Why SIT?</h3>
+
+  <p class="mb-6">
+    Integration tests verify pairs of modules. SIT verifies that the entire assembled system works when deployed. This catches things that no lower-level test can:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>Configuration errors ("the environment variable was named differently in production")</li>
+    <li>Wiring mistakes ("the DI container registered the wrong implementation")</li>
+    <li>Environment-specific issues ("this query works locally but times out against the production database")</li>
+    <li>Performance problems under load</li>
+  </ul>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Example with k6</h3>
+
+  <CodeBlock
+    lang="javascript"
+    code={`// k6 script - tests from outside the system
+import http from 'k6/http';
+import { check } from 'k6';
+
+export default function () {
+  // Create order
+  const createRes = http.post(
+    'https://api.example.com/orders',
+    JSON.stringify({
+      items: [{ productId: 'widget-1', quantity: 2 }],
+    }),
+    {
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
+
+  check(createRes, {
+    'create returns 201': r => r.status === 201,
+    'create returns order id': r => r.json('id') !== undefined,
+  });
+
+  const orderId = createRes.json('id');
+
+  // Get order
+  const getRes = http.get('https://api.example.com/orders/' + orderId);
+
+  check(getRes, {
+    'get returns 200': r => r.status === 200,
+    'get returns correct order': r => r.json('id') === orderId,
+  });
+}`}
+  />
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">No Coverage Metrics</h3>
+
+  <p class="mb-6">
+    SIT is black-box. You cannot measure code coverage, and you should not try. Instead, you measure:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>Response times (are they within SLA?)</li>
+    <li>Error rates (are they below threshold?)</li>
+    <li>Throughput (can the system handle expected load?)</li>
+    <li>User journey completion (do the critical flows work end-to-end?)</li>
+  </ul>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">E2E (End-to-End Testing)</h2>
+
+  <p class="mb-6">
+    E2E tests verify the <strong>entire user experience</strong>, including the frontend. These are the most expensive tests to write and maintain, and they should be treated accordingly.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">When You Need E2E</h3>
+
+  <p class="mb-6">
+    If you are building a backend API with no frontend, you do not need E2E tests. SIT covers you. E2E is specifically for verifying that:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>The frontend renders correctly</li>
+    <li>User interactions work (clicks, form submissions, navigation)</li>
+    <li>Frontend and backend integrate properly (API calls, error handling, loading states)</li>
+  </ul>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Example with Playwright</h3>
+
+  <CodeBlock
+    lang="typescript"
+    code={`test('user can create order', async ({ page }) => {
+  await page.goto('/orders/new');
+
+  await page.fill('[data-testid="product-search"]', 'widget');
+  await page.click('[data-testid="product-widget-1"]');
+  await page.click('[data-testid="add-to-order"]');
+
+  await page.click('[data-testid="submit-order"]');
+
+  await expect(page.locator('[data-testid="order-success"]')).toBeVisible();
+  await expect(page.locator('[data-testid="order-id"]')).toHaveText(/ORD-/);
+});`}
+  />
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Keep E2E Tests Minimal</h3>
+
+  <p class="mb-6">
+    E2E tests are brittle. A CSS class changes, a loading spinner takes 50ms longer, a third-party script loads differently — and the test breaks. The maintenance cost is high.
+  </p>
+
+  <p class="mb-6">
+    Keep E2E to:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>The critical happy path (can a user complete the core workflow?)</li>
+    <li>The most common user journey (what does 80% of traffic do?)</li>
+    <li>Leave edge cases to unit and functional tests where they are cheap</li>
+  </ul>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Complete Pyramid</h2>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Level</th>
+          <th class="text-left p-2 font-semibold">Type</th>
+          <th class="text-left p-2 font-semibold">Visibility</th>
+          <th class="text-left p-2 font-semibold">Speed</th>
+          <th class="text-left p-2 font-semibold">What It Catches</th>
+          <th class="text-left p-2 font-semibold">Tools</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Unit</td>
+          <td class="p-2 align-top">White-box</td>
+          <td class="p-2 align-top">Internal</td>
+          <td class="p-2 align-top">Milliseconds</td>
+          <td class="p-2 align-top">Logic bugs, edge cases</td>
+          <td class="p-2 align-top">Mocha, xUnit, pytest</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Functional</td>
+          <td class="p-2 align-top">Black-box</td>
+          <td class="p-2 align-top">Interface</td>
+          <td class="p-2 align-top">Milliseconds</td>
+          <td class="p-2 align-top">Contract violations, LSP breaks</td>
+          <td class="p-2 align-top">Same as unit</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Integration</td>
+          <td class="p-2 align-top">Black-box</td>
+          <td class="p-2 align-top">Module pair</td>
+          <td class="p-2 align-top">Seconds</td>
+          <td class="p-2 align-top">Wiring bugs, mapper errors</td>
+          <td class="p-2 align-top">Testcontainers</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">SIT</td>
+          <td class="p-2 align-top">Black-box</td>
+          <td class="p-2 align-top">Full system</td>
+          <td class="p-2 align-top">Seconds-minutes</td>
+          <td class="p-2 align-top">Config errors, perf issues</td>
+          <td class="p-2 align-top">k6, Gatling, Postman</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">E2E</td>
+          <td class="p-2 align-top">Black-box</td>
+          <td class="p-2 align-top">Full stack + UI</td>
+          <td class="p-2 align-top">Minutes</td>
+          <td class="p-2 align-top">UI bugs, frontend integration</td>
+          <td class="p-2 align-top">Playwright, Cypress</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Testability as Design Feedback</h2>
+
+  <p class="mb-6">
+    This is perhaps the most important section in this entire article. When a test is hard to write, <strong>do not blame the testing framework</strong>. The difficulty is telling you something about the design.
+  </p>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Hard to test because...</th>
+          <th class="text-left p-2 font-semibold">The design problem is...</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Too many collaborators to set up</td>
+          <td class="p-2 align-top">Class has too many responsibilities (SRP, <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">Part 3</a>)</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Hidden state needs to be initialized</td>
+          <td class="p-2 align-top">Implicit dependencies (dependency model, <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">Part 2</a>)</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Cannot swap an implementation</td>
+          <td class="p-2 align-top">Hard dependencies, missing interfaces (<a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">Part 2</a>)</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Side effects everywhere</td>
+          <td class="p-2 align-top">Impure functions (functional thinking, <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Part 4</a>)</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Cannot control behavior of a dependency</td>
+          <td class="p-2 align-top">Missing injection point (<a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">Part 2</a>)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mb-6">
+    The fix is never a better mocking library. The fix is better architecture. If you find yourself reaching for complex test utilities — mocking static methods, patching globals, using reflection to access private fields — stop. You are fighting the design instead of fixing it.
+  </p>
+
+  <p class="mb-6">
+    This is why testability is the proof that the design works. If you can write a test in five lines with a trivial Arrange section, the class is well-designed. If the Arrange section is thirty lines of setup, the class needs refactoring.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Quick Checklist</h2>
+
+  <p class="mb-6">
+    <strong>Unit Tests:</strong>
+  </p>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Concern</th>
+          <th class="text-left p-2 font-semibold">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Structure</td>
+          <td class="p-2 align-top">AAA pattern (Arrange, Act, Assert)</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Naming</td>
+          <td class="p-2 align-top">subject, input, expected, actual</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Coverage</td>
+          <td class="p-2 align-top">Multiple test cases per behavior (triangulation)</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Determinism</td>
+          <td class="p-2 align-top">No random values, no real time, no real IO</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Speed</td>
+          <td class="p-2 align-top">Milliseconds per test</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Goal</td>
+          <td class="p-2 align-top">100% code coverage</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mb-6">
+    <strong>Functional Tests:</strong>
+  </p>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Concern</th>
+          <th class="text-left p-2 font-semibold">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Target</td>
+          <td class="p-2 align-top">Tests against interfaces, not implementations</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Reuse</td>
+          <td class="p-2 align-top">Same contract tests run against all implementations</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Purpose</td>
+          <td class="p-2 align-top">Verifies LSP (Liskov Substitution Principle)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mb-6">
+    <strong>Integration Tests:</strong>
+  </p>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Concern</th>
+          <th class="text-left p-2 font-semibold">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Scope</td>
+          <td class="p-2 align-top">Module pairs, not full system</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Infrastructure</td>
+          <td class="p-2 align-top">Real databases/queues via Testcontainers</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Boundaries</td>
+          <td class="p-2 align-top">Still mocks external services</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mb-6">
+    <strong>SIT:</strong>
+  </p>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Concern</th>
+          <th class="text-left p-2 font-semibold">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Perspective</td>
+          <td class="p-2 align-top">Full system from client's eye</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Access</td>
+          <td class="p-2 align-top">Black-box only, no code access</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Metrics</td>
+          <td class="p-2 align-top">Behavior metrics (latency, error rate, throughput), not coverage</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mb-6">
+    <strong>E2E:</strong>
+  </p>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Concern</th>
+          <th class="text-left p-2 font-semibold">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">When needed</td>
+          <td class="p-2 align-top">Only if there is a frontend</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Scope</td>
+          <td class="p-2 align-top">Critical happy paths only</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Maintenance</td>
+          <td class="p-2 align-top">Minimal test count, high value per test</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mb-6">
+    <strong>Design Feedback:</strong>
+  </p>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Concern</th>
+          <th class="text-left p-2 font-semibold">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Hard tests</td>
+          <td class="p-2 align-top">Refactor the code, not the test</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Complete Circle</h2>
+
+  <p class="mb-6">
+    We started in <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-1">Part 1</a> with a claim: the most important property of software is how easy it is to change.
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-1">Part 1</a> identified the enemy: unmanaged dependencies, invisible coupling, action at a distance.
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">Part 2</a> gave us the dependency model: visible and flexible dependencies through injection and interfaces.
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">Part 3</a> gave us structural rules: SOLID principles for organizing code into cohesive, decoupled units.
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Part 4</a> gave us behavioral patterns: functional thinking for writing predictable, composable code.
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-5">Part 5</a> showed how to model the domain: Records, Principals, Aggregate Roots — the language of the business, pure from infrastructure.
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-6">Part 6</a> arranged everything into layers: pure domain in the center, controllers inward, repositories outward, mappers at every boundary.
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-7">Part 7</a> showed how to wire it all together: the composition root as the big bang, stateless services forming an immutable tree.
+  </p>
+
+  <p class="mb-6">
+    And this part revealed the payoff. Tests give you the <strong>confidence</strong> to make changes. Without tests, changeability is theoretical — you <em>think</em> you can change the code, but you are not sure what will break. With tests, changeability is real. You change the code, run the suite, and know in seconds whether something broke.
+  </p>
+
+  <p class="mb-6">
+    Every principle in this series exists so that, at the end, you can write a test in five lines, run it in two seconds, and know that your code works. That is not just good engineering — that is the freedom to move fast without breaking things.
+  </p>
+
+  <p class="mb-6">
+    That is the AtomiCloud way.
+  </p>
+
+  <div class="mt-16 pt-8 border-t border-border flex justify-between text-sm">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-7">&larr; Prev: Wiring It Together</a>
+  </div>
+</BlogPostLayout>
