@@ -1,0 +1,611 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { getBlogPost } from '../../lib/blog-posts';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BoundedContexts from '../../components/BoundedContexts';
+
+export const frontmatter = {
+  title: 'Domain-Driven Design',
+  description:
+    'Part 5 of 8: Modeling the business domain with Records, Principals, and Aggregate Roots — pure, testable, and free of infrastructure',
+  author: 'Adelphi Liong',
+  date: '2026-04-02',
+  topic: 'tech' as const,
+  tags: ['software-design', 'domain-driven-design', 'ddd', 'architecture'],
+  shareMessage: 'Records, Principals, Aggregate Roots: a CRUD-friendly take on DDD',
+};
+
+const post = getBlogPost('software-design-philosophy-part-5')!;
+---
+
+<BlogPostLayout post={post}>
+  <p class="text-lg leading-relaxed mb-6">
+    <em>We have principles for managing dependencies and patterns for writing predictable code. Now we pick up the actual material: your business domain. This part shows how to model domain concepts as code — structures that speak the language of the business and remain pure from infrastructure.</em>
+  </p>
+
+  <nav class="my-8 rounded-lg border border-border bg-muted/30 p-4">
+    <div class="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">The AtomiCloud Engineering Series</div>
+    <ol class="list-decimal list-inside space-y-1 text-sm">
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-1">Software Design Philosophy</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">The Dependency Model</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">SOLID Principles</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Functional Thinking</a></li>
+      <li class="font-semibold text-primary">Domain-Driven Design (you are here)</li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-6">Three-Layer Architecture</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-7">Wiring It Together</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-8">Testing and Testability</a></li>
+    </ol>
+  </nav>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Start with the Domain</h2>
+
+  <p class="mb-6">
+    Imagine you are building a chess game.
+  </p>
+
+  <p class="mb-6">
+    The instinct — especially if you have been coding for a while — is to jump straight into the weeds. What GUI library? What framework? Should the board be a 2D array or a hashmap of coordinates? Do we need WebSockets for multiplayer? Should we use SQLite to persist game state?
+  </p>
+
+  <p class="mb-6">
+    Stop. None of that matters yet.
+  </p>
+
+  <p class="mb-6">
+    Think about what chess actually <em>is</em>. A board — eight by eight squares, alternating colors. Pieces — each type with its own movement rules. The knight jumps in an L-shape. The bishop slides diagonally. The rook moves in straight lines. There are special moves that trip up even experienced players: en passant, castling, pawn promotion. There is a turn system — white moves first, then alternating. There is check, checkmate, stalemate, draw by repetition, the fifty-move rule.
+  </p>
+
+  <p class="mb-6">
+    All of this is pure logic. You can write it in code right now. You can build the data structures for the board, the pieces, the movement validation. You can write exhaustive tests for every edge case — does castling work when the king has moved? Does en passant expire correctly? Does pawn promotion let you pick any piece? And you will have done all of this <em>without deciding a single thing about technology</em>. You will not know if this is a mobile app, a CLI tool, a web application, or a desktop app. You will not know if game state lives in memory, in SQLite, or in localStorage on the browser. You will not know if it is single-player, local multiplayer, or played over the network.
+  </p>
+
+  <p class="mb-6">
+    You do, however, have to commit to a programming language. That is the only technology decision the domain requires.
+  </p>
+
+  <p class="mb-6">
+    This is what "start with the domain" means. The domain is the logic — the part that changes when the <em>requirements</em> change, not when the infrastructure changes. Everything else is detail. Plugins. They can be decided later and swapped later.
+  </p>
+
+  <p class="mb-6">
+    Now, you might push back: "That is unrealistic. Of course I care about the database and the GUI framework. I need to make those decisions to build anything." And you are right — you do care. But the point is not to <em>ignore</em> those decisions. It is to design the domain so that those decisions do not leak into the core logic. When the PM says "we need to add a chess timer," that is a domain change — you modify the domain code. When the DevOps team says "we are migrating from PostgreSQL to CockroachDB," that is an infrastructure change — the domain should not know or care.
+  </p>
+
+  <p class="mb-6">
+    What you get from this discipline:
+  </p>
+
+  <ol class="list-decimal list-inside mb-6 space-y-2">
+    <li><strong>Testability</strong> — domain logic tested with plain unit tests, no containers, no mocking of HTTP clients, no database setup</li>
+    <li><strong>Portability</strong> — the same domain can be served over REST today and gRPC tomorrow without touching a line of business logic</li>
+    <li><strong>Clarity</strong> — stakeholders can read the domain model and recognize their own concepts, because the code speaks the language of the business, not the language of the framework</li>
+  </ol>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Ubiquitous Language</h2>
+
+  <p class="mb-6">
+    Every concept in your system deserves a precise name. Vague words breed bugs — not the kind your linter catches, but the kind where two developers build the same feature differently because they understood the word differently.
+  </p>
+
+  <p class="mb-6">
+    Consider the word "user." In a platform that has both consumers and administrators, calling everyone "user" forces every developer to rely on context. The function signature says <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">user: User</code> and the reader has to guess which kind. Worse, sometimes they do not even realize they should guess — they just assume, and they assume wrong.
+  </p>
+
+  <p class="mb-6">
+    Rename them. <strong>ToolUser</strong> and <strong>EndUser</strong>. Or <strong>Admin</strong> and <strong>Customer</strong>. Now the code is self-documenting. The compiler enforces the distinction. And the next person to join the team does not have to ask "which user do you mean?"
+  </p>
+
+  <p class="mb-6">
+    The rule is simple: <strong>if two developers could reasonably disagree about what a name means, rename it.</strong>
+  </p>
+
+  <p class="mb-6">
+    This goes deeper than you might expect. What does "staging" mean in your company? Is it the pre-production environment, or the QA environment? What does "graph" mean in your project — nodes and vertices, or charts and visualizations? What are "chips" in your domain — french fries or silicon? These ambiguities feel silly in isolation, but in a codebase with fifty contributors, they cause real confusion and real bugs.
+  </p>
+
+  <p class="mb-6">
+    Here is a trick that has served me well: for things like projects, environments, and infrastructure, <strong>choose arbitrary names that carry no baggage</strong>. I name my projects after atoms (Hydrogen, Helium, Lithium) and my environments after pokemon (Pikachu, Charmander, Bulbasaur). Why? Because projects change course and direction. A project called "Marketplace" that pivots to a subscription platform will confuse every new hire who wonders where the marketplace code went. A project called "Sulfur" never misleads because it never described anything in the first place. The name is a handle, not a description.
+  </p>
+
+  <p class="mb-6">
+    Ubiquitous language should be established hand-in-hand with the domain design phase and embedded directly in the code — not in a wiki that nobody reads, but in the type names, function names, and module names that developers touch every day.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Bounded Contexts</h2>
+
+  <p class="mb-6">
+    A bounded context is a sub-module — a closed ecosystem where names have consistent meaning and the internals are hidden from the outside world. Inside the boundary, everyone agrees on what "Order" means. Outside, the same word might mean something completely different, and that is fine.
+  </p>
+
+  <p class="mb-6">
+    You can think of bounded contexts as <strong>larger-scale versions of the classes we design with SOLID</strong>. The same principles apply, just at a bigger scale:
+  </p>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">OOP Class</th>
+          <th class="text-left p-2 font-semibold">Bounded Context</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Single responsibility</td>
+          <td class="p-2 align-top">Single business capability</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Dependencies via constructor</td>
+          <td class="p-2 align-top">Dependencies via interfaces</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">No hidden globals</td>
+          <td class="p-2 align-top">No shared database tables</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Testable in isolation</td>
+          <td class="p-2 align-top">Testable in isolation</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The Mistake: Sharing Too Much</h3>
+
+  <p class="mb-6">
+    Here is where people get it wrong. Imagine an e-commerce system. Someone — with the best intentions — creates a single <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Order</code> class and shares it across the entire codebase:
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`class Order:
+  id: UUID
+  customer: Customer
+  items: OrderItem[]
+  shippingAddress: Address
+  paymentMethod: PaymentMethod
+  total: Money
+  tax: Money
+  discount: Money
+  status: OrderStatus
+  trackingNumber: string?
+  invoiceNumber: string?`}
+  />
+
+  <p class="mb-6">
+    Looks reasonable, right? One source of truth for what an order is. DRY. Clean.
+  </p>
+
+  <p class="mb-6">
+    Except this <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Order</code> changes for many reasons:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>Marketing wants to add promotional codes</li>
+    <li>Warehouse needs custom packaging options</li>
+    <li>Finance needs tax breakdowns by jurisdiction</li>
+    <li>Customer support needs cancellation reasons</li>
+  </ul>
+
+  <p class="mb-6">
+    Every change to any of these concerns forces a change to the <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Order</code> class. You have high coupling at the architecture level — the very thing we have been fighting against since Part 1.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The Fix: Draw Boundaries</h3>
+
+  <p class="mb-6">
+    Split into bounded contexts, each with its own view of what an "order" is:
+  </p>
+
+  <BoundedContexts client:load />
+
+  <CodeBlock
+    lang="typescript"
+    code={`Billing Context:
+  Order = { id, items, total, tax, discount, paymentMethod, invoiceNumber }
+
+Shipping Context:
+  Order = { id, items, shippingAddress, trackingNumber, packagingNotes }
+
+CustomerSupport Context:
+  Order = { id, status, cancellationReason, refundStatus }`}
+  />
+
+  <p class="mb-6">
+    Each context has its own <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Order</code> type. They share the <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">id</code> for cross-referencing, but they do not share the full structure. A change to billing's <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Order</code> does not affect shipping's <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Order</code>. In modern systems, these might even be separate microservices owned by different teams.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The Test: Can a Team Own It?</h3>
+
+  <p class="mb-6">
+    A practical test for whether your boundaries are right: <strong>can you assign a single team to own this context?</strong>
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li><strong>Billing</strong> — yes, the finance team owns this.</li>
+    <li><strong>Shipping</strong> — yes, the logistics team owns this.</li>
+    <li><strong>OrderManagement</strong> — maybe, but does it justify a separate team?</li>
+  </ul>
+
+  <p class="mb-6">
+    If you cannot name a team that would own a context, the boundary might be wrong. Bounded contexts should align with organizational boundaries. This is Conway's Law working in your favor instead of against you.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Two Kinds of Things</h2>
+
+  <p class="mb-6">
+    Before we get into domain data modeling, we need to establish a fundamental distinction. In our system, there are exactly two kinds of things in code:
+  </p>
+
+  <ol class="list-decimal list-inside mb-6 space-y-2">
+    <li><strong>Services</strong> (objects with behavior)</li>
+    <li><strong>Structures</strong> (pure data)</li>
+  </ol>
+
+  <p class="mb-6">
+    Services have behavior — they orchestrate, they validate, they call other services. Structures are just data — they carry information, they get passed around, they get transformed. The key rule is:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li><strong>Services</strong> depend on other services (via injection) and on configuration</li>
+    <li><strong>Service methods</strong> take structures as input and return structures as output</li>
+  </ul>
+
+  <p class="mb-6">
+    Think of it like a universe. You create all the services at the start, wiring them into each other — the big bang moment (we will see this play out in detail in <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-7">Part 7</a>). Once the universe is set up, you kick-start the engine. The services call each other, orchestrating the structures — making the data move and dance through the system.
+  </p>
+
+  <p class="mb-6">
+    Why does this matter? In traditional OOP, objects bundle state and behavior together. A <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">User</code> object holds the user's data <em>and</em> has methods that operate on it. This creates an unpredictable graph — objects referencing objects, mutating each other's state, triggering cascades of side effects. You can never be sure what calling <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">user.updateEmail()</code> will do because it might reach into other objects and change their state too.
+  </p>
+
+  <p class="mb-6">
+    In our approach, services are immutable. Their members are set at construction and never change. They form a <strong>tree</strong>, not a graph. Service A uses service B and service C, and that relationship is fixed from the moment the application starts. Data flows through method parameters and return values, never stored on the service itself.
+  </p>
+
+  <p class="mb-6">
+    This distinction — services orchestrate, structures flow — shapes everything that follows.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Records, Principals, and Aggregate Roots</h2>
+
+  <p class="mb-6">
+    Now we get to the domain data model. Traditional DDD gives us Value Objects, Entities, and Aggregate Roots. These are good concepts, but the original definitions get confusing in practice (especially "entities" — in the data world, everything is an "entity"). More importantly, they were designed for domains with deep invariants. Most of what we build does not have deep invariants. Most of what we build has forms that create records, lists that display records, and relationships between records.
+  </p>
+
+  <p class="mb-6">
+    So we adapt the concepts and give them clearer names.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The Original Concepts (Briefly)</h3>
+
+  <p class="mb-6">
+    In traditional DDD:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li><strong>Value Objects</strong> are defined by their attributes. Two <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Money(10, USD)</code> objects are equal because they represent the same value. They have no identity.</li>
+    <li><strong>Entities</strong> have identity that persists across state changes. User #42 is still User #42 after they change their email.</li>
+    <li><strong>Aggregate Roots</strong> are consistency boundaries. An <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Order</code> aggregate contains <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">OrderItem</code> entities. You never modify an <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">OrderItem</code> directly; you go through the <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Order</code> aggregate root, which enforces invariants like "total must equal sum of items."</li>
+  </ul>
+
+  <p class="mb-6">
+    This works beautifully for complex domains. A banking system needs aggregate roots to enforce that debits and credits balance. A shipping system needs them to enforce that items cannot be added to a shipped order.
+  </p>
+
+  <p class="mb-6">
+    But let us be honest: most CRUD applications do not have invariants like that. They have forms, lists, and detail pages. For these, traditional aggregate roots add ceremony without payoff.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">What We Actually Need</h3>
+
+  <p class="mb-6">
+    Think about what a typical CRUD operation requires:
+  </p>
+
+  <ol class="list-decimal list-inside mb-6 space-y-2">
+    <li>A type for <strong>creation</strong> that does not include the ID (the system generates it — the user should not have to provide one)</li>
+    <li>A type for <strong>updates</strong> that excludes the ID (the ID identifies <em>which</em> entity to update, it cannot be changed)</li>
+    <li>A type for <strong>search results</strong> that is cheap (single table, no joins — you are listing potentially hundreds of results)</li>
+    <li>A type for <strong>detail views</strong> that includes related data (the full picture, with joins, for a single entity)</li>
+  </ol>
+
+  <p class="mb-6">
+    This leads us to three types: <strong>Records</strong>, <strong>Principals</strong>, and <strong>Aggregate Roots</strong>.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Records (Pure Data, No Identity)</h3>
+
+  <p class="mb-6">
+    A Record is pure data with no identity. It contains every field that a create or update form would ask for.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`PostRecord:
+  title: string
+  description: string
+  tags: string[]
+
+AuthorRecord:
+  name: string
+  dateOfBirth: date`}
+  />
+
+  <p class="mb-6">
+    Why no ID? Because at creation time, the ID does not exist yet. At update time, the ID is passed separately — you are saying "update <em>this</em> entity with <em>this</em> data." The ID is not data you change; it is something you reference.
+  </p>
+
+  <p class="mb-6">
+    A good heuristic: <strong>a Record contains every field that would appear on a create/update form.</strong> The <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">id</code> is never on the form because the system assigns it.
+  </p>
+
+  <p class="mb-6">
+    Records also allow us to partition an entity into multiple segments with different update routes. You might have a <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">UserProfileRecord</code> for mutable profile data and a <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">UserSettingsRecord</code> for preferences — both belonging to the same entity but changing at different rates and for different reasons.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Principals (Records with Identity)</h3>
+
+  <p class="mb-6">
+    A Principal is a Record with identity — the combination of an ID and the record data.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`PostPrincipal: id: uuid;
+record: PostRecord;
+
+AuthorPrincipal: id: uuid;
+record: AuthorRecord;`}
+  />
+
+  <p class="mb-6">
+    Post #42 is still post #42 after you edit the title. The identity persists across state changes. Principals map directly to database tables — the primary key is the <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">id</code>, the columns come from the Record.
+  </p>
+
+  <p class="mb-6">
+    Sometimes you need more than just an <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">id</code> for identity — maybe a <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">version</code> for optimistic concurrency, or a <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">createdAt</code> for audit purposes. The Principal is where those live. But the <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">id</code> is the baseline.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Aggregate Roots (Assembled Views)</h3>
+
+  <p class="mb-6">
+    An Aggregate Root is a view that assembles a Principal with its related Principals. This is where relationships live.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`Post:
+  principal: PostPrincipal
+  author: AuthorPrincipal
+
+Author:
+  principal: AuthorPrincipal
+  posts: PostPrincipal[]`}
+  />
+
+  <p class="mb-6">
+    Notice that <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Post</code> and <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Author</code> are different aggregate roots that reference each other's principals. They are <em>views</em> — shaped by what the consuming service needs, not by some canonical structure. Different services might define different aggregate roots for the same principal.
+  </p>
+
+  <p class="mb-6">
+    This departs from traditional DDD where aggregate roots are consistency boundaries. In most CRUD applications, aggregate roots are <strong>read models</strong>. They assemble related data into useful shapes for specific use cases.
+  </p>
+
+  <p class="mb-6">
+    You might push back: "Isn't this just a DTO? Just a view model?" Honestly, yes — but with a specific structure and naming convention that makes the entire team consistent. When someone says "the Post aggregate root," everyone knows it means the post principal plus its related data. That consistency has value.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">CRUD Mapping</h2>
+
+  <p class="mb-6">
+    With these three types defined, the standard CRUD operations fall out naturally. And the mapping is not arbitrary — each choice has a specific reason rooted in what the operation actually does.
+  </p>
+
+  <p class="mb-6">
+    <strong>Search returns Principals.</strong> When you are listing posts — showing 50, 100, maybe 500 results — you do not need every related entity. You need the post's own data: title, description, maybe a tag count. That is a single-table query, fast and cheap. Returning full aggregate roots would mean joining against the author table for every single result. For a search page, that is unnecessary and expensive.
+  </p>
+
+  <CodeBlock lang="typescript" code={`search(params: PostSearch) => PostPrincipal[]`} />
+
+  <p class="mb-6">
+    <strong>Get returns an Aggregate Root.</strong> When you are viewing a single post, you want the full picture: the post itself, its author, maybe its comments. This is a detail view, and a few joins for one entity are perfectly fine. This is where the aggregate root earns its keep.
+  </p>
+
+  <CodeBlock lang="typescript" code={`get(id: uuid) => Post?`} />
+
+  <p class="mb-6">
+    <strong>Create takes a Record.</strong> The user does not know the ID at creation time — the system assigns one. So the input is just the data: title, description, tags. You get back an Aggregate Root so the UI can immediately display the newly created post with all its context, without needing a second round-trip.
+  </p>
+
+  <CodeBlock lang="typescript" code={`create(record: PostRecord) => Post`} />
+
+  <p class="mb-6">
+    <strong>Update takes an ID and a Record separately.</strong> Why separate? Because the ID identifies <em>which</em> entity to update, and the Record is <em>what</em> to update it with. The ID is immutable — you cannot change which post you are editing mid-update. By keeping them separate, the contract makes this explicit. And since the entire Record is replaced, there is no ambiguity about partial updates.
+  </p>
+
+  <CodeBlock lang="typescript" code={`update(id: uuid, record: PostRecord) => Post?`} />
+
+  <p class="mb-6">
+    <strong>Delete takes an ID.</strong> That is all you need. Nothing to return.
+  </p>
+
+  <CodeBlock lang="typescript" code={`delete(id: uuid) => void`} />
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The Summary Table</h3>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Operation</th>
+          <th class="text-left p-2 font-semibold">Input</th>
+          <th class="text-left p-2 font-semibold">Output</th>
+          <th class="text-left p-2 font-semibold">DB Cost</th>
+          <th class="text-left p-2 font-semibold">Why</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><strong>Search</strong></td>
+          <td class="p-2 align-top">Search params</td>
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Principal[]</code></td>
+          <td class="p-2 align-top">Single table, no joins</td>
+          <td class="p-2 align-top">Lists need volume, not detail</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><strong>Get</strong></td>
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">id</code></td>
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">AggregateRoot</code></td>
+          <td class="p-2 align-top">Joins (one entity)</td>
+          <td class="p-2 align-top">Detail view needs full picture</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><strong>Create</strong></td>
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Record</code></td>
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">AggregateRoot</code></td>
+          <td class="p-2 align-top">Insert + read-back joins</td>
+          <td class="p-2 align-top">No ID at creation time</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><strong>Update</strong></td>
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">id</code>, <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Record</code></td>
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">AggregateRoot</code></td>
+          <td class="p-2 align-top">Update + read-back joins</td>
+          <td class="p-2 align-top">Identity is immutable, data is mutable</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top"><strong>Delete</strong></td>
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">id</code></td>
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">void</code></td>
+          <td class="p-2 align-top">Single table delete</td>
+          <td class="p-2 align-top">Nothing to return</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Why This Lands Well with Relational Databases</h3>
+
+  <p class="mb-6">
+    This is not just a clean API design — it maps beautifully to how relational databases actually work.
+  </p>
+
+  <p class="mb-6">
+    Principals map directly to tables. A <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">PostPrincipal</code> is a row in the <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">posts</code> table: primary key is the <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">id</code>, columns come from the Record fields. An <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">AuthorPrincipal</code> is a row in the <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">authors</code> table. One entity, one table. Clean.
+  </p>
+
+  <p class="mb-6">
+    Aggregate Roots map to joins. The <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Post</code> aggregate root (post + its author) is a <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">SELECT ... JOIN authors ON ...</code>. The <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Author</code> aggregate root (author + their posts) is the reverse join. Different aggregate roots are just different join queries over the same underlying tables.
+  </p>
+
+  <p class="mb-6">
+    Records map to inserts and updates. Since a Record has no ID, <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">INSERT INTO posts (title, description, tags) VALUES (...)</code> is a direct mapping — the database generates the ID. For updates, <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">UPDATE posts SET title = ?, description = ?, tags = ? WHERE id = ?</code> is equally direct — the ID in the WHERE clause, the Record fields in the SET clause.
+  </p>
+
+  <p class="mb-6">
+    And here is where performance comes in. Search returns Principals — that is a single-table query with no joins. When you are listing 100 posts on a search page, you hit one table, one index scan. Fast. If search returned Aggregate Roots instead, you would be joining against <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">authors</code> (and possibly <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">comments</code>, <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">tags</code>, etc.) for every single row. For a list page, that is wasted work.
+  </p>
+
+  <p class="mb-6">
+    Get returns an Aggregate Root — but only for one entity. A few joins to assemble one post with its author is trivial for any relational database. The cost is constant, not proportional to result count.
+  </p>
+
+  <p class="mb-6">
+    This split — cheap queries for lists, rich queries for detail views — is exactly how relational databases are designed to be used. The domain model and the database model are not fighting each other; they are working together.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The Service Interface</h3>
+
+  <p class="mb-6">
+    Putting it all together:
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`interface PostService:
+  search(params: PostSearch): Result<PostPrincipal[], PostError>
+  get(id: uuid): Result<Post?, PostError>
+  create(record: PostRecord): Result<Post, PostError>
+  update(id: uuid, record: PostRecord): Result<Post?, PostError>
+  delete(id: uuid): Result<void, PostError>`}
+  />
+
+  <p class="mb-6">
+    Once you have seen this pattern for one entity, you have seen it for all. <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">UserService</code>, <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">ConfigurationService</code>, <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">HabitService</code> — they follow the same shape. A new team member learns the pattern once and can navigate any module in the codebase.
+  </p>
+
+  <p class="mb-6">
+    We do not <em>have</em> to do it this way. Some domains genuinely need different patterns — event sourcing, CQRS, complex workflows with state machines. But for the vast majority of CRUD web applications, this makes things consistent, performant, and predictable. And consistency, it turns out, is one of the most underrated features of a codebase.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Quick Checklist</h2>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Concern</th>
+          <th class="text-left p-2 font-semibold">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Domain isolation</td>
+          <td class="p-2 align-top">Zero imports from HTTP, database, or framework packages</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Ubiquitous language</td>
+          <td class="p-2 align-top">Every concept has a precise, unambiguous name</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Bounded contexts</td>
+          <td class="p-2 align-top">Modules own their types, no cross-imports of internals, boundaries align with team ownership</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Two kinds of things</td>
+          <td class="p-2 align-top">Services have behavior, structures are pure data</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Records</td>
+          <td class="p-2 align-top">Every entity has a Record with updateable fields (no ID)</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Principals</td>
+          <td class="p-2 align-top">Every entity has a Principal with identity + Record</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Aggregate roots</td>
+          <td class="p-2 align-top">Views assemble related Principals for specific use cases</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">CRUD mapping</td>
+          <td class="p-2 align-top">Search returns Principals; Get/Create/Update return Aggregate Roots</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">No identity in Records</td>
+          <td class="p-2 align-top"><code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">id</code> lives in Principal only</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">What Comes Next</h2>
+
+  <p class="mb-6">
+    The domain is designed. We have Records, Principals, Aggregate Roots, and service interfaces that speak the language of the business. The domain is pure, testable, and unaware of the outside world.
+  </p>
+
+  <p class="mb-6">
+    But it is also useless on its own. A chess engine that cannot display a board or save a game is just an exercise. We need to connect the domain to reality — databases, APIs, user interfaces — without compromising its purity.
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-6">Part 6: Three-Layer Architecture</a> shows how to wrap the domain in layers that handle the messy world while keeping the core clean.
+  </p>
+
+  <div class="mt-16 pt-8 border-t border-border flex justify-between text-sm">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">&larr; Prev: Functional Thinking</a>
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-6">Next: Three-Layer Architecture &rarr;</a>
+  </div>
+</BlogPostLayout>

@@ -75,6 +75,14 @@ export default function LocalityDiagram() {
 
   return (
     <div className="my-8 md:my-12">
+      <style>{`
+        .ld-line { transform-box: fill-box; transform-origin: center; }
+        .ld-dot { transform-box: fill-box; transform-origin: center; }
+        @media (prefers-reduced-motion: reduce) {
+          .ld-line, .ld-dot { animation: none; }
+          .ld-anim animate { animation: none; }
+        }
+      `}</style>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         {/* Left Panel: Without Locality (Global) */}
         <div className="border-2 border-rose-500/50 rounded-lg p-4 md:p-6 bg-rose-500/10">
@@ -83,8 +91,8 @@ export default function LocalityDiagram() {
           </div>
 
           <div className="relative aspect-square w-full max-w-[200px] md:max-w-[240px] mx-auto bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-              {/* Connection lines - all interconnected (faded) */}
+            <svg className="ld-anim w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+              {/* Connection lines - all interconnected (faded, static hairlines) */}
               {globalDots.map((dot, i) =>
                 globalDots
                   .slice(i + 1)
@@ -102,7 +110,7 @@ export default function LocalityDiagram() {
                   )),
               )}
 
-              {/* Dots */}
+              {/* Dots (static) */}
               {globalDots.map((dot, i) => (
                 <circle
                   key={i}
@@ -115,14 +123,28 @@ export default function LocalityDiagram() {
               ))}
 
               {/* Highlight ring on dot of interest */}
-              <circle
-                cx={globalDots[0]!.x}
-                cy={globalDots[0]!.y}
-                r="5"
-                fill="none"
-                stroke="#6366f1"
-                strokeWidth="1.5"
-              />
+              <circle cx={globalDots[0]!.x} cy={globalDots[0]!.y} r="5" fill="none" stroke="#6366f1" strokeWidth="1" />
+              {/* Pulsing highlight ring (subtle) */}
+              <circle cx={globalDots[0]!.x} cy={globalDots[0]!.y} r="5" fill="none" stroke="#6366f1" strokeWidth="0.75">
+                <animate
+                  attributeName="r"
+                  values="5;6;5"
+                  dur="4s"
+                  calcMode="spline"
+                  keyTimes="0;0.5;1"
+                  keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="stroke-opacity"
+                  values="0.6;0.4;0.6"
+                  dur="4s"
+                  calcMode="spline"
+                  keyTimes="0;0.5;1"
+                  keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+                  repeatCount="indefinite"
+                />
+              </circle>
             </svg>
 
             {/* Label */}
@@ -143,20 +165,49 @@ export default function LocalityDiagram() {
           </div>
 
           <div className="relative aspect-square w-full max-w-[200px] md:max-w-[240px] mx-auto bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            <svg className="ld-anim w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
               {/* Boundary box - centered around dot of interest */}
+              {/* Static fill */}
+              <rect x="32" y="32" width="36" height="36" fill="#6366f1" fillOpacity="0.1" rx="3" />
+              {/* Self-drawing dashed stroke (perimeter ~ 144) */}
               <rect
                 x="32"
                 y="32"
                 width="36"
                 height="36"
-                fill="#6366f1"
-                fillOpacity="0.1"
+                fill="none"
                 stroke="#6366f1"
-                strokeWidth="1.5"
-                strokeDasharray="4 2"
+                strokeWidth="0.75"
                 rx="3"
-              />
+                strokeDasharray="144"
+                strokeDashoffset="144"
+              >
+                <animate
+                  attributeName="stroke-dashoffset"
+                  values="144;0"
+                  dur="1.4s"
+                  begin="0s"
+                  fill="freeze"
+                  calcMode="spline"
+                  keyTimes="0;1"
+                  keySplines="0.4 0 0.2 1"
+                />
+              </rect>
+              {/* Dashed border (fades in after draw-in, then settles) */}
+              <rect
+                x="32"
+                y="32"
+                width="36"
+                height="36"
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth="0.75"
+                rx="3"
+                strokeDasharray="4 2"
+                strokeOpacity="0"
+              >
+                <animate attributeName="stroke-opacity" values="0;1" dur="0.5s" begin="1.3s" fill="freeze" />
+              </rect>
 
               {/* Outside dots - faded */}
               {localOutsideDots.map((dot, i) => (
@@ -193,8 +244,36 @@ export default function LocalityDiagram() {
                 r="5"
                 fill="none"
                 stroke="#6366f1"
-                strokeWidth="1.5"
+                strokeWidth="0.75"
               />
+              {/* Pulsing highlight ring (subtle) */}
+              <circle
+                cx={localInsideDots[0]!.x}
+                cy={localInsideDots[0]!.y}
+                r="5"
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth="0.75"
+              >
+                <animate
+                  attributeName="r"
+                  values="5;6;5"
+                  dur="4s"
+                  calcMode="spline"
+                  keyTimes="0;0.5;1"
+                  keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="stroke-opacity"
+                  values="0.6;0.4;0.6"
+                  dur="4s"
+                  calcMode="spline"
+                  keyTimes="0;0.5;1"
+                  keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+                  repeatCount="indefinite"
+                />
+              </circle>
 
               {/* Deferred arrow */}
               <defs>
@@ -202,8 +281,17 @@ export default function LocalityDiagram() {
                   <polygon points="0 0, 6 3, 0 6" fill="#64748b" />
                 </marker>
               </defs>
-              <line x1="68" y1="50" x2="85" y2="50" stroke="#64748b" strokeWidth="1" markerEnd="url(#arrowhead)" />
-              <text x="70" y="46" fontSize="6" fill="#64748b" fontWeight="500">
+              <line
+                x1="68"
+                y1="50"
+                x2="85"
+                y2="50"
+                stroke="#64748b"
+                strokeWidth="0.75"
+                strokeOpacity="0.7"
+                markerEnd="url(#arrowhead)"
+              />
+              <text x="70" y="46" fontSize="6" fill="#64748b" fontWeight="500" opacity="0.8">
                 deferred
               </text>
             </svg>

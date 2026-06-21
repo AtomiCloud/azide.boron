@@ -20,6 +20,14 @@ const BACKGROUND_COLOR = config.app.backgroundColor;
 export default defineConfig({
   site: SITE_URL,
 
+  // Allow the khost Cloudflare Tunnel hostname to reach the dev server.
+  // (Vite blocks unknown Host headers by default.)
+  vite: {
+    server: {
+      allowedHosts: ['blog.ernest.atomi.cloud'],
+    },
+  },
+
   // Pure static site - no adapter needed for Cloudflare Workers static assets
   image: {
     // Enable automatic responsive image sizing
@@ -100,7 +108,9 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: true,
+        // Disabled in dev so the local/preview server never serves stale
+        // cached pages while iterating. Production PWA is unaffected.
+        enabled: false,
         navigateFallbackAllowlist: [/^\//],
       },
     }),

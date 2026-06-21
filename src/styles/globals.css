@@ -53,8 +53,17 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+    /* Account for sticky header when jumping to anchors */
+    scroll-padding-top: 5rem;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground font-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   h1,
   h2,
@@ -63,6 +72,19 @@
   h5,
   h6 {
     @apply font-sans;
+    font-feature-settings: 'ss01' 1;
+    letter-spacing: -0.02em;
+  }
+  /* Refined, accessible focus ring */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  /* Editorial text selection */
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
+    color: inherit;
   }
 }
 
@@ -96,4 +118,209 @@
 
 :root.dark .bg-dot-pattern {
   background-image: radial-gradient(circle, rgba(168, 85, 247, 0.2) 2px, transparent 2px);
+}
+
+/* ============================================================
+   EDITORIAL READING EXPERIENCE
+   A typographic system for long-form articles. Text flows in a
+   comfortable measure (~70ch) while full-width figures (diagrams,
+   code blocks, images) break out to the full content width.
+   ============================================================ */
+.article-prose {
+  --measure: 44rem;
+  font-size: 1.1875rem; /* 19px */
+  line-height: 1.8;
+  color: hsl(var(--foreground) / 0.92);
+  font-feature-settings:
+    'liga' 1,
+    'kern' 1;
+}
+
+/* Constrain text-level blocks to a readable measure, centered.
+   Non-text children (astro-islands / figures) stay full width. */
+.article-prose > p,
+.article-prose > ul,
+.article-prose > ol,
+.article-prose > h1,
+.article-prose > h2,
+.article-prose > h3,
+.article-prose > h4,
+.article-prose > blockquote,
+.article-prose > pre,
+.article-prose > hr,
+.article-prose > .prose-wide,
+.article-prose > .article-codeblock {
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+
+.article-prose p {
+  margin-bottom: 1.5rem;
+  text-wrap: pretty;
+}
+
+.article-prose > p:first-child {
+  font-size: 1.3125rem;
+  line-height: 1.7;
+  color: hsl(var(--foreground) / 0.75);
+}
+
+/* Headings */
+.article-prose h2 {
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+  margin-top: 3.5rem;
+  margin-bottom: 1.25rem;
+  scroll-margin-top: 5rem;
+}
+.article-prose h3 {
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.625rem);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  scroll-margin-top: 5rem;
+}
+.article-prose h2 + p,
+.article-prose h3 + p {
+  margin-top: 0;
+}
+
+/* Emphasis & links */
+.article-prose strong {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+.article-prose a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: hsl(var(--primary) / 0.35);
+  transition:
+    text-decoration-color 0.2s ease,
+    color 0.2s ease;
+}
+.article-prose a:hover {
+  text-decoration-color: hsl(var(--primary));
+}
+
+/* Lists */
+.article-prose ul,
+.article-prose ol {
+  margin-bottom: 1.5rem;
+  padding-left: 1.5rem;
+  list-style-position: outside;
+}
+.article-prose ul {
+  list-style-type: none;
+}
+.article-prose ul > li {
+  position: relative;
+  padding-left: 0.5rem;
+}
+.article-prose ul > li::before {
+  content: '';
+  position: absolute;
+  left: -0.9rem;
+  top: 0.85em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: hsl(var(--primary) / 0.7);
+}
+.article-prose ol {
+  list-style-type: decimal;
+}
+.article-prose ol > li::marker {
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+.article-prose li {
+  margin-bottom: 0.6rem;
+}
+
+/* Blockquote */
+.article-prose blockquote {
+  border-left: 3px solid hsl(var(--primary) / 0.5);
+  padding: 0.25rem 0 0.25rem 1.5rem;
+  margin: 2rem auto;
+  font-style: italic;
+  color: hsl(var(--foreground) / 0.8);
+  font-size: 1.25rem;
+  line-height: 1.6;
+}
+
+/* Inline code */
+.article-prose :not(pre) > code {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+  font-size: 0.875em;
+  background: hsl(var(--muted));
+  color: hsl(var(--primary));
+  padding: 0.15em 0.4em;
+  border-radius: 0.35rem;
+  border: 1px solid hsl(var(--border));
+  font-feature-settings: normal;
+}
+
+/* Horizontal rule */
+.article-prose hr {
+  border: 0;
+  height: 1px;
+  background: hsl(var(--border));
+  margin: 3rem auto;
+}
+
+/* Images */
+.article-prose img {
+  border-radius: 0.75rem;
+  margin: 2rem auto;
+}
+
+/* ============================================================
+   MOTION SYSTEM
+   Scroll-reveal driven by IntersectionObserver (see Layout.astro).
+   Falls back to fully-visible without JS and respects
+   prefers-reduced-motion.
+   ============================================================ */
+@layer utilities {
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 0.45s ease,
+      transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* No-JS / pre-hydration fallback: show everything */
+html:not(.js) [data-reveal] {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .animate-blob-slow {
+    animation: none !important;
+  }
 }

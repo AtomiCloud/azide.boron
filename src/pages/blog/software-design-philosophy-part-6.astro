@@ -1,0 +1,520 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { getBlogPost } from '../../lib/blog-posts';
+import CodeBlock from '../../components/CodeBlock.astro';
+import ThreeLayerFlow from '../../components/ThreeLayerFlow';
+
+export const frontmatter = {
+  title: 'Three-Layer Architecture',
+  description: 'Part 6 of 8: Wrapping a pure domain in controller and repository layers, with mappers at every boundary',
+  author: 'Adelphi Liong',
+  date: '2026-04-09',
+  topic: 'tech' as const,
+  tags: ['software-design', 'architecture', 'clean-architecture', 'layering'],
+  shareMessage: 'Keep your domain pure; everything else is a plugin',
+};
+
+const post = getBlogPost('software-design-philosophy-part-6')!;
+---
+
+<BlogPostLayout post={post}>
+  <p class="text-lg leading-relaxed mb-6">
+    <em>The domain is pure. Everything else is a plugin. This part shows how to wrap the domain in layers that connect it to the real world — databases, APIs, message queues — while keeping the core clean and testable.</em>
+  </p>
+
+  <nav class="my-8 rounded-lg border border-border bg-muted/30 p-4">
+    <div class="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">The AtomiCloud Engineering Series</div>
+    <ol class="list-decimal list-inside space-y-1 text-sm">
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-1">Software Design Philosophy</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-2">The Dependency Model</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">SOLID Principles</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Functional Thinking</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-5">Domain-Driven Design</a></li>
+      <li class="font-semibold text-primary">Three-Layer Architecture (you are here)</li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-7">Wiring It Together</a></li>
+      <li><a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-8">Testing and Testability</a></li>
+    </ol>
+  </nav>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Why Three Models for the Same Concept?</h2>
+
+  <p class="mb-6">
+    I have a problem with "DRY." Not the principle itself — the way people apply it. "Don't Repeat Yourself" is fine as a starting point, but developers treat it like a commandment and start merging things that look similar but are not actually the same thing.
+  </p>
+
+  <p class="mb-6">
+    Here is my challenge to you: <strong>things that look exactly alike might not be repetition at all.</strong> Remember the Single Responsibility Principle from <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">Part 3</a>? Two pieces of code that happen to look identical but change for different reasons are not duplicates. They are coincidences.
+  </p>
+
+  <p class="mb-6">
+    Consider a <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">User</code> concept in a typical web application:
+  </p>
+
+  <CodeBlock
+    lang="json"
+    code={`// API Request/Response
+{ "email": "alice@example.com", "password": "secret123" }
+
+// Domain Model
+User { email: Email, passwordHash: HashedPassword }
+
+// Database Row
+{ email: "alice@example.com", password_hash: "\$2b\$12..." }`}
+  />
+
+  <p class="mb-6">
+    These look similar. A naive developer might say "this is repetition, let us use one model everywhere." But they change for different reasons:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>The <strong>API model</strong> changes when mobile developers request a different field format, or when you version your API</li>
+    <li>The <strong>domain model</strong> changes when business rules evolve — password complexity requirements, email validation logic</li>
+    <li>The <strong>database model</strong> changes when the DBA optimizes queries, adds indexes, or migrates to a new schema</li>
+  </ul>
+
+  <p class="mb-6">
+    Using one model couples all these concerns. A change to the API response format could break the database query. That is not DRY; that is coupling wearing DRY's clothes.
+  </p>
+
+  <p class="mb-6">
+    <strong>The real question is: do these change for the same reason?</strong> If not, they should be separate, even if they look identical today.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Plugin Architecture</h2>
+
+  <p class="mb-6">
+    The three-layer architecture is, at its core, a plugin architecture. The domain is the core. Everything else — HTTP handlers, database adapters, message queue consumers — is a plugin that can be swapped without the domain knowing.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The Pattern That Emerges</h3>
+
+  <p class="mb-6">
+    Start with the domain. A <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">PostService</code> that creates posts, validates rules, returns results. Pure. Tested.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`class PostService(repo: IPostRepository):
+  create(record: PostRecord): Result<Post, PostError>`}
+  />
+
+  <p class="mb-6">
+    The service depends on <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">IPostRepository</code> — an interface. The domain <em>defines</em> the interface but does not <em>implement</em> it. It is a promise: "someone will provide this capability."
+  </p>
+
+  <p class="mb-6">
+    When you need persistence, you add a layer <strong>outward</strong>:
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`class PostgresPostRepository(db: Database): IPostRepository
+  create(record: PostRecord): Result<Post, PostError>
+    // translate domain types to database types, execute query, translate back`}
+  />
+
+  <p class="mb-6">
+    The domain did not change. You added a module that fulfills its promise.
+  </p>
+
+  <p class="mb-6">
+    When you need an API, you add a layer <strong>inward</strong>:
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`class PostController(service: PostService, mapper: PostControllerMapper)
+  handleCreate(httpReq: HttpRequest): HttpResponse
+    // parse request, map to domain, call service, map response`}
+  />
+
+  <p class="mb-6">
+    Again, the domain did not change. You added a module on the other side.
+  </p>
+
+  <p class="mb-6">
+    The pattern: <strong>domain in the center, persistence grows outward, APIs grow inward.</strong> The domain stays untouched.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Three Layers</h2>
+
+  <ThreeLayerFlow client:load />
+
+  <p class="mb-6">
+    And the dependency direction is critical — <strong>all arrows point inward toward the domain</strong>:
+  </p>
+
+  <p class="mb-6">
+    The controller depends on the domain (it calls domain services). The repository depends on the domain (it implements domain interfaces). The domain depends on nothing external. This is Dependency Inversion from <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-3">Part 3</a> applied at the architecture level.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Inward Layer (Controller)</h3>
+
+  <p class="mb-6">
+    Controllers receive events and instructions from outside the system: HTTP requests, CLI commands, WebSocket messages, cron triggers. Their job is narrow and mechanical:
+  </p>
+
+  <ol class="list-decimal list-inside mb-6 space-y-2">
+    <li>Parse incoming input</li>
+    <li>Map it to domain types (via the controller mapper)</li>
+    <li>Call the domain service</li>
+    <li>Map the domain response to output format</li>
+    <li>Return it</li>
+  </ol>
+
+  <p class="mb-6">
+    Controllers contain <strong>zero business logic</strong>. They are thin wiring. An HTTP controller and a CLI controller can call the exact same domain service — the only difference is how they parse input and format output.
+  </p>
+
+  <p class="mb-6">
+    If you find business logic creeping into a controller — validation beyond "is this valid JSON?", conditional logic based on domain rules — that is a smell. Push it down into the domain.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Domain Layer (Pure)</h3>
+
+  <p class="mb-6">
+    The domain layer is the source of truth. All business rules live here.
+  </p>
+
+  <p class="mb-6">
+    Three constraints:
+  </p>
+
+  <ol class="list-decimal list-inside mb-6 space-y-2">
+    <li><strong>No IO</strong> — no database calls, no HTTP requests, no file reads</li>
+    <li><strong>No knowledge of outer layers</strong> — no imports of controller or repository types</li>
+    <li><strong>Interfaces for external needs</strong> — when the domain needs something from outside, it defines an interface; the outward layer implements it</li>
+  </ol>
+
+  <p class="mb-6">
+    Because the domain has no IO, it is <strong>fully testable</strong> with mocked dependencies. You do not need a running database or a test server. This is the reason the entire architecture exists.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Outward Layer (Repository)</h3>
+
+  <p class="mb-6">
+    Repositories implement the interfaces the domain defines. They handle the messy details: connection pooling, retries, serialization, error translation.
+  </p>
+
+  <p class="mb-6">
+    The domain never sees database exceptions or network errors. Repositories catch infrastructure errors and map them to domain error types. A <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">SqlTimeoutException</code> becomes a <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">PostError.StorageFailure</code>. The domain only speaks its own language.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Separate Models Per Layer</h2>
+
+  <p class="mb-6">
+    Each layer has its own models. This feels like overhead until the day it saves you.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The Story</h3>
+
+  <p class="mb-6">
+    Six months in, the PM says: "Change the API. <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">createdAt</code> should be a Unix timestamp, not an ISO string. And rename <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">couponCode</code> to <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">discountCode</code>."
+  </p>
+
+  <p class="mb-6">
+    If your controller uses the domain model directly, you touch domain code for what is purely an API formatting requirement. Domain tests might break. The repository might get confused. The change cascades.
+  </p>
+
+  <p class="mb-6">
+    If your controller has its own models and a mapper, you change one mapper function. Domain untouched. Repository untouched. Change contained.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Controller Models (Request/Response)</h3>
+
+  <p class="mb-6">
+    Optimized for the transport protocol. Strings, numbers, simple structures. Validation annotations. Serialization hints.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`record CreatePostReq:
+  title: string
+  description: string
+  tags: string[]
+
+record PostRes:
+  id: string
+  title: string
+  description: string
+  tags: string[]
+  authorName: string
+  createdAt: string       // ISO 8601 for the wire`}
+  />
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Domain Models (Rich Types)</h3>
+
+  <p class="mb-6">
+    Use the richest types the language offers. Validated newtypes. Discriminated unions. Proper enums.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`record PostRecord:
+  title: PostTitle         // Validated, non-empty, max 200 chars
+  description: string
+  tags: Tag[]              // Typed, not raw strings`}
+  />
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Data Models (Storage-Optimized)</h3>
+
+  <p class="mb-6">
+    Shaped for the persistence layer. Foreign keys instead of nested objects. JSON-serialized columns. Database-native timestamps.
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`record PostData:
+  id: UUID
+  author_id: UUID           // Foreign key, not a nested object
+  title: string             // Plain string for column
+  tags: string              // JSON-serialized array
+  created_at: timestamp`}
+  />
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The Impact</h3>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Scenario</th>
+          <th class="text-left p-2 font-semibold">Shared models</th>
+          <th class="text-left p-2 font-semibold">Separate models</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Change API format</td>
+          <td class="p-2 align-top">Touch domain and possibly repository</td>
+          <td class="p-2 align-top">Update controller mapper only</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Change DB schema</td>
+          <td class="p-2 align-top">Touch domain and possibly controller</td>
+          <td class="p-2 align-top">Update repository mapper only</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Add CLI interface</td>
+          <td class="p-2 align-top">Modify domain to accommodate CLI needs</td>
+          <td class="p-2 align-top">Add CLI models + mapper, domain untouched</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Switch database</td>
+          <td class="p-2 align-top">Touch all layers</td>
+          <td class="p-2 align-top">Update repository only</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Mappers Between Boundaries</h2>
+
+  <p class="mb-6">
+    Mappers are pure functions that translate between layers. They are small, boring, and extraordinarily valuable. When things go wrong, you look at the mapper. When requirements change, you update the mapper. The rest of the system stays stable.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Controller Mapper</h3>
+
+  <CodeBlock
+    lang="typescript"
+    code={`module PostControllerMapper:
+  toRecord(req: CreatePostReq): PostRecord
+  toRes(post: Post): PostRes`}
+  />
+
+  <p class="mb-6">
+    Converts incoming requests to domain inputs, and domain outputs to responses. This is where you handle things like "the API uses <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">discountCode</code> but the domain calls it <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">couponCode</code>" — a renaming that costs one line in the mapper instead of a project-wide refactor.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Repository Mapper</h3>
+
+  <CodeBlock
+    lang="typescript"
+    code={`module PostDataMapper:
+  toData(principal: PostPrincipal): PostData
+  toDomain(data: PostData, authorData: AuthorData): Post`}
+  />
+
+  <p class="mb-6">
+    Converts domain models to storage format, and storage format back to domain. This is where JSON serialization of array columns happens, where foreign keys get resolved into nested objects, where database nulls get translated to domain optionals.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Error Flow</h2>
+
+  <p class="mb-6">
+    Errors flow through the same boundaries as data, translated at each layer.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">At the Repository</h3>
+
+  <p class="mb-6">
+    The repository catches infrastructure errors and maps them to domain errors:
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`class PostgresPostRepository(db: Database): IPostRepository:
+  create(record: PostRecord): Result<Post, PostError>:
+    try:
+      data = toData(record)
+      db.posts.insert(data)
+      return Ok(toDomain(data))
+    catch e: DatabaseException:
+      return Err(PostError.StorageFailure(e.message))`}
+  />
+
+  <p class="mb-6">
+    Infrastructure exceptions stop at the boundary. The domain only sees domain error types.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">At the Controller</h3>
+
+  <p class="mb-6">
+    The controller maps domain errors to transport errors. For HTTP, this typically means Problem Details (RFC 9457):
+  </p>
+
+  <CodeBlock
+    lang="typescript"
+    code={`mapError(error: PostError): HttpResponse:
+  match error:
+    PostError.EmptyTitle =>
+      ProblemDetails(status: 400, type: ".../empty_title", ...)
+    PostError.NotFound(id) =>
+      ProblemDetails(status: 404, type: ".../not_found", ...)
+    PostError.StorageFailure(msg) =>
+      ProblemDetails(status: 500, type: ".../internal_error", ...)`}
+  />
+
+  <p class="mb-6">
+    The same domain error becomes a 400 for HTTP, a formatted message for CLI, an error frame for WebSocket. The domain does not know or care which transport is in use.
+  </p>
+
+  <p class="mb-6">
+    See <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-4">Part 4: Functional Thinking</a> for the <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Result</code> type and compositional error handling patterns.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The Framework Question</h2>
+
+  <p class="mb-6">
+    At this point, a very natural objection comes up: "This is a lot of ceremony. We are never going to change our framework. Why guard against something that will not happen?"
+  </p>
+
+  <p class="mb-6">
+    Fair point. And you are right — you are probably not going to switch from Express to Fastify, or from ASP.NET to Spring Boot. Framework migrations are rare and dramatic.
+  </p>
+
+  <p class="mb-6">
+    But here is the thing: <strong>you do not need to switch frameworks to feel this pain. You just need to upgrade.</strong>
+  </p>
+
+  <p class="mb-6">
+    Think about it. Your application is built on Laravel 2. The framework works fine, but Laravel 3 introduces significant improvements — better performance, security patches, features your team needs. You want to upgrade.
+  </p>
+
+  <p class="mb-6">
+    If your business logic is tightly coupled to Laravel:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>Every controller directly uses Laravel's <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Request</code> object in domain logic</li>
+    <li>Every service reaches for Laravel's <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Config</code> facade</li>
+    <li>Every repository returns Laravel's <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[0.9em]">Collection</code> type</li>
+  </ul>
+
+  <p class="mb-6">
+    The upgrade requires touching every file. You are not upgrading; you are rewriting — disguised as a version bump.
+  </p>
+
+  <p class="mb-6">
+    If your business logic is isolated behind interfaces:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>Controllers are thin wrappers that parse Laravel requests and call domain services</li>
+    <li>Domain services depend on interfaces, not Laravel implementations</li>
+    <li>Repositories use Laravel's ORM internally but return domain types</li>
+  </ul>
+
+  <p class="mb-6">
+    The upgrade requires updating the adapter implementations — the boundary plugins. The domain layer, where all your actual business logic lives, is untouched.
+  </p>
+
+  <p class="mb-6">
+    A major version bump is, effectively, a framework change. The APIs shift, the contracts break, the internals reorganize. And <strong>upgrading is inevitable</strong> — security patches alone guarantee it. The cost of upgrading should not scale with the size of your codebase. It should scale with the size of your boundary layer.
+  </p>
+
+  <p class="mb-6">
+    This architecture is not about guarding against a hypothetical framework switch. It is about making the <em>routine</em> act of upgrading fast and safe. It forces you not to weave framework code across the domain. When the time comes — and it always comes — you change the boundary plugins and move on.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Quick Checklist</h2>
+
+  <div class="overflow-x-auto my-6">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="border-b-2 border-border">
+          <th class="text-left p-2 font-semibold">Concern</th>
+          <th class="text-left p-2 font-semibold">Check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Three layers</td>
+          <td class="p-2 align-top">Controller (inward) / Domain (pure) / Repository (outward)</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Domain purity</td>
+          <td class="p-2 align-top">Zero IO in domain layer</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Interface boundaries</td>
+          <td class="p-2 align-top">Domain defines interfaces; outward layer implements them</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Separate models</td>
+          <td class="p-2 align-top">Each layer has its own model types</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Controller mapper</td>
+          <td class="p-2 align-top">Req/Res ⇄ Domain translation</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Repository mapper</td>
+          <td class="p-2 align-top">Domain ⇄ Data translation</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Error boundaries</td>
+          <td class="p-2 align-top">Repository maps infrastructure errors to domain errors</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Error translation</td>
+          <td class="p-2 align-top">Controller maps domain errors to transport errors</td>
+        </tr>
+        <tr class="border-b border-border/50">
+          <td class="p-2 align-top">Dependency direction</td>
+          <td class="p-2 align-top">All arrows point inward toward domain</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">What Comes Next</h2>
+
+  <p class="mb-6">
+    The architecture is set. We have a pure domain, controllers that receive input, repositories that persist data, and mappers at every boundary. The error flow is clean. The models are separated.
+  </p>
+
+  <p class="mb-6">
+    What remains is the mechanics: how services are actually constructed, how the composition root wires everything together, how the whole machine starts running.
+  </p>
+
+  <p class="mb-6">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-7">Part 7: Wiring It Together</a> covers the composition root — the big bang of dependency injection where all layers are assembled and the engine comes to life.
+  </p>
+
+  <div class="mt-16 pt-8 border-t border-border flex justify-between text-sm">
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-5">&larr; Prev: Domain-Driven Design</a>
+    <a class="text-primary hover:underline" href="/blog/software-design-philosophy-part-7">Next: Wiring It Together &rarr;</a>
+  </div>
+</BlogPostLayout>

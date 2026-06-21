@@ -73,6 +73,14 @@ export default function SymptomsVisualization() {
     [8, 11],
   ];
 
+  // Ordered path nodes (hop 0 -> hop 4) for the travelling pulse.
+  const pathNodeIndices = [0, 2, 5, 8, 11] as const;
+  const pathPointsStr = pathNodeIndices
+    .map((idx, n) => `${n === 0 ? 'M' : 'L'} ${fragilityDots[idx]!.x} ${fragilityDots[idx]!.y}`)
+    .join(' ');
+  // Timing: pulse travels for 2.5s, then a 1s pause before repeating (3.5s cycle).
+  const PULSE_DUR = '3.5s';
+
   // Rigidity web - more mesh-like, not all need to change
   const rigidityDots = [
     { x: 22, y: 35, hop: 0, needsChange: true }, // source - must change
@@ -138,6 +146,12 @@ export default function SymptomsVisualization() {
 
   return (
     <div className="my-8 md:my-12">
+      <style>{`
+        @media (prefers-reduced-motion: reduce) {
+          .sv-pulse { display: none; }
+          .sv-pulse *, .sv-flash * { animation: none !important; }
+        }
+      `}</style>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         {/* Left Panel: Fragility */}
         <div className="border border-rose-400/40 dark:border-rose-500/40 rounded-lg p-4 bg-rose-50/50 dark:bg-rose-950/20">
@@ -161,8 +175,20 @@ export default function SymptomsVisualization() {
                     y2={toDot.y}
                     stroke="#f43f5e"
                     strokeOpacity={isOnPath ? 0.7 : 0.12}
-                    strokeWidth={isOnPath ? 0.8 : 0.25}
-                  />
+                    strokeWidth={isOnPath ? 0.55 : 0.2}
+                  >
+                    {isOnPath && (
+                      <animate
+                        attributeName="stroke-opacity"
+                        values="0.5;0.85;0.5"
+                        dur="4s"
+                        calcMode="spline"
+                        keyTimes="0;0.5;1"
+                        keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+                        repeatCount="indefinite"
+                      />
+                    )}
+                  </line>
                 );
               })}
 
@@ -184,36 +210,109 @@ export default function SymptomsVisualization() {
                       fill={dot.hop === 0 ? '#6366f1' : dot.hop === 4 ? '#dc2626' : '#f43f5e'}
                     />
                     {dot.hop === 0 && (
-                      <circle cx={dot.x} cy={dot.y} r={5} fill="none" stroke="#6366f1" strokeWidth={1} />
+                      <circle cx={dot.x} cy={dot.y} r={5} fill="none" stroke="#6366f1" strokeWidth={0.5} />
                     )}
                     {dot.hop === 4 && (
-                      <>
+                      <g className="sv-flash">
+                        {/* Break flash ring — single hairline ripple that fires when the pulse arrives */}
+                        <circle cx={dot.x} cy={dot.y} r={3.5} fill="none" stroke="#dc2626" strokeWidth={0.4}>
+                          <animate
+                            attributeName="r"
+                            values="3.5;3.5;9;3.5"
+                            keyTimes="0;0.71;0.83;1"
+                            dur={PULSE_DUR}
+                            calcMode="spline"
+                            keySplines="0 0 1 1;0.4 0 0.2 1;0.4 0 0.2 1"
+                            repeatCount="indefinite"
+                          />
+                          <animate
+                            attributeName="stroke-opacity"
+                            values="0;0;0.9;0"
+                            keyTimes="0;0.71;0.78;1"
+                            dur={PULSE_DUR}
+                            calcMode="spline"
+                            keySplines="0 0 1 1;0.4 0 0.2 1;0.4 0 0.2 1"
+                            repeatCount="indefinite"
+                          />
+                        </circle>
                         {/* White background circle for contrast */}
-                        <circle cx={dot.x} cy={dot.y} r={3.5} fill="white" stroke="#dc2626" strokeWidth={1} />
-                        {/* X mark using lines for perfect centering */}
-                        <line
-                          x1={dot.x - 2}
-                          y1={dot.y - 2}
-                          x2={dot.x + 2}
-                          y2={dot.y + 2}
-                          stroke="#dc2626"
-                          strokeWidth={1.5}
-                          strokeLinecap="round"
-                        />
-                        <line
-                          x1={dot.x + 2}
-                          y1={dot.y - 2}
-                          x2={dot.x - 2}
-                          y2={dot.y + 2}
-                          stroke="#dc2626"
-                          strokeWidth={1.5}
-                          strokeLinecap="round"
-                        />
-                      </>
+                        <circle cx={dot.x} cy={dot.y} r={3.5} fill="white" stroke="#dc2626" strokeWidth={0.5} />
+                        {/* X mark using lines for perfect centering (gentle emphasis on pulse arrival) */}
+                        <g>
+                          <animate
+                            attributeName="opacity"
+                            values="0.6;0.6;1;0.6"
+                            keyTimes="0;0.7;0.78;1"
+                            dur={PULSE_DUR}
+                            calcMode="spline"
+                            keySplines="0 0 1 1;0.4 0 0.2 1;0.4 0 0.2 1"
+                            repeatCount="indefinite"
+                          />
+                          <line
+                            x1={dot.x - 2}
+                            y1={dot.y - 2}
+                            x2={dot.x + 2}
+                            y2={dot.y + 2}
+                            stroke="#dc2626"
+                            strokeWidth={1}
+                            strokeLinecap="round"
+                          />
+                          <line
+                            x1={dot.x + 2}
+                            y1={dot.y - 2}
+                            x2={dot.x - 2}
+                            y2={dot.y + 2}
+                            stroke="#dc2626"
+                            strokeWidth={1}
+                            strokeLinecap="round"
+                          />
+                        </g>
+                      </g>
                     )}
                   </React.Fragment>
                 );
               })}
+
+              {/* Travelling pulse: dramatises action-at-a-distance from hop 0 to hop 4.
+                  Reduced-motion users see a static path (pulse hidden via CSS). */}
+              <g className="sv-pulse">
+                <circle r={2.6} fill="#f59e0b" fillOpacity={0.35}>
+                  <animateMotion
+                    path={pathPointsStr}
+                    dur={PULSE_DUR}
+                    keyPoints="0;1;1"
+                    keyTimes="0;0.71;1"
+                    calcMode="spline"
+                    keySplines="0.4 0 0.2 1;0 0 1 1"
+                    repeatCount="indefinite"
+                  />
+                  <animate
+                    attributeName="fill-opacity"
+                    values="0.35;0.35;0;0"
+                    keyTimes="0;0.7;0.72;1"
+                    dur={PULSE_DUR}
+                    repeatCount="indefinite"
+                  />
+                </circle>
+                <circle r={1.4} fill="#fbbf24">
+                  <animateMotion
+                    path={pathPointsStr}
+                    dur={PULSE_DUR}
+                    keyPoints="0;1;1"
+                    keyTimes="0;0.71;1"
+                    calcMode="spline"
+                    keySplines="0.4 0 0.2 1;0 0 1 1"
+                    repeatCount="indefinite"
+                  />
+                  <animate
+                    attributeName="opacity"
+                    values="1;1;0;0"
+                    keyTimes="0;0.7;0.72;1"
+                    dur={PULSE_DUR}
+                    repeatCount="indefinite"
+                  />
+                </circle>
+              </g>
             </svg>
 
             {/* Labels */}
@@ -262,53 +361,59 @@ export default function SymptomsVisualization() {
                 return <circle key={i} cx={dot.x} cy={dot.y} r={1.5} fill="#d1d5db" fillOpacity={0.4} />;
               })}
 
-              {/* Dots that need change (with wave pulsation) */}
+              {/* Dots that need change.
+                  Only the single focal (source) node carries a calm ripple — every
+                  other node is static so the panel reads as quiet, not busy. */}
               {rigidityDots.map((dot, i) => {
                 if (!dot.needsChange) return null;
                 return (
-                  <g key={i}>
-                    {/* Wave rings for pulsation effect */}
+                  <g key={i} className="sv-flash">
+                    {/* Static focus ring on the source node */}
                     {dot.hop === 0 && (
                       <>
-                        <circle cx={dot.x} cy={dot.y} r={5} fill="none" stroke="#6366f1" strokeWidth={1} />
-                        {/* Subtle wave rings */}
+                        <circle cx={dot.x} cy={dot.y} r={5} fill="none" stroke="#6366f1" strokeWidth={0.5} />
+                        {/* Single calm ripple — one slow, hairline ring that fades as it expands */}
                         <circle
                           cx={dot.x}
                           cy={dot.y}
-                          r={8}
+                          r={6}
                           fill="none"
                           stroke="#6366f1"
-                          strokeWidth={0.5}
+                          strokeWidth={0.3}
                           strokeOpacity={0.3}
                         >
-                          <animate attributeName="r" values="6;12;6" dur="2s" repeatCount="indefinite" />
+                          <animate
+                            attributeName="r"
+                            values="6;13"
+                            dur="4.5s"
+                            calcMode="spline"
+                            keyTimes="0;1"
+                            keySplines="0.4 0 0.2 1"
+                            repeatCount="indefinite"
+                          />
                           <animate
                             attributeName="stroke-opacity"
-                            values="0.3;0;0.3"
-                            dur="2s"
+                            values="0.4;0"
+                            dur="4.5s"
+                            calcMode="spline"
+                            keyTimes="0;1"
+                            keySplines="0.4 0 0.2 1"
                             repeatCount="indefinite"
                           />
                         </circle>
                       </>
                     )}
+                    {/* Non-source change nodes: static hairline halo, no animation */}
                     {dot.hop !== 0 && (
                       <circle
                         cx={dot.x}
                         cy={dot.y}
-                        r={5}
+                        r={4}
                         fill="none"
                         stroke="#fb923c"
                         strokeWidth={0.3}
-                        strokeOpacity={0.4}
-                      >
-                        <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite" />
-                        <animate
-                          attributeName="stroke-opacity"
-                          values="0.4;0.1;0.4"
-                          dur="2s"
-                          repeatCount="indefinite"
-                        />
-                      </circle>
+                        strokeOpacity={0.3}
+                      />
                     )}
                     {/* Main dot */}
                     <circle

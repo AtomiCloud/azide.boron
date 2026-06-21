@@ -4,6 +4,7 @@ import { Badge } from '../components/ui/badge';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { PWAInstallButton } from '../components/PWAInstallButton';
 import { ReadingProgress } from '../components/ReadingProgress';
+import ArticleToc from '../components/ArticleToc';
 import { SocialShareButtons } from '../components/SocialShareButtons';
 import { getConfig } from '../lib/config';
 import { calculateReadTimeFromHTML } from '../lib/read-time';
@@ -17,9 +18,46 @@ interface Props {
 const config = getConfig();
 const { post } = Astro.props;
 
-// Calculate read time from slot content if not provided
-const slotContent = await Astro.slots.render('default');
-const readTime = Astro.props.readTime || calculateReadTimeFromHTML(slotContent);
+// Render slot content, then extract h2/h3 headings to build a table of
+// contents and inject stable ids so anchors / scroll-spy work.
+const rawContent = await Astro.slots.render('default');
+
+const usedIds = new Set<string>();
+const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/<[^>]+>/g, '')
+    .replace(/&[a-z]+;/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+interface Heading {
+  id: string;
+  text: string;
+  level: number;
+}
+const headings: Heading[] = [];
+
+const slotContent = rawContent.replace(
+  /<(h2|h3)([^>]*)>([\s\S]*?)<\/\1>/g,
+  (match, tag: string, attrs: string, inner: string) => {
+    const text = inner
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!text) return match;
+    let id = slugify(text) || `section-${headings.length + 1}`;
+    let n = 2;
+    const base = id;
+    while (usedIds.has(id)) id = `${base}-${n++}`;
+    usedIds.add(id);
+    headings.push({ id, text, level: tag === 'h2' ? 2 : 3 });
+    if (/\sid=/.test(attrs)) return match; // respect an existing id
+    return `<${tag}${attrs} id="${id}">${inner}</${tag}>`;
+  },
+);
+
+const readTime = Astro.props.readTime || calculateReadTimeFromHTML(rawContent);
 
 const formattedDate = post.date.toLocaleDateString('en-US', {
   month: 'long',
@@ -27,46 +65,40 @@ const formattedDate = post.date.toLocaleDateString('en-US', {
   year: 'numeric',
 });
 
+// Eyebrow: TOPIC · PART N (part derived from slug when present)
+const partMatch = post.slug.match(/part-(\d+)/);
+const eyebrow = partMatch
+  ? `${post.topic.toUpperCase()} · PART ${partMatch[1]}`
+  : post.topic.toUpperCase();
+
 // Construct full URL for sharing
 const postUrl = `${config.site.url}/blog/${post.slug}`;
 ---
 
-<Layout
-  title={post.title}
-  description={post.description}
-  image={`/blog/${post.slug}/og.png`}
-  article={true}
->
-  <div class="flex-1 bg-gradient-to-b from-background to-muted/20">
-    <!-- Sticky Top Bar with Reading Progress -->
-    <header class="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border relative overflow-hidden">
-      <!-- Reading Progress Background (Behind everything) -->
-      <ReadingProgress client:load />
+<Layout title={post.title} description={post.description} image={`/blog/${post.slug}/og.png`} article={true}>
+  <!-- Thin reading-progress bar pinned to the very top -->
+  <ReadingProgress client:load />
 
-      <div class="container mx-auto px-3 md:px-4 max-w-4xl relative z-10">
-        <div class="flex justify-between items-center py-4">
-          <!-- Back Button -->
+  <div class="flex-1">
+    <!-- Sticky top navigation -->
+    <header class="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/60">
+      <div class="container mx-auto px-4 md:px-6 max-w-6xl">
+        <div class="flex justify-between items-center py-3.5">
           <a
             href="/"
-            class="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
+            class="group inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <svg
-              class="w-4 h-4 mr-2"
+              class="w-4 h-4 transition-transform group-hover:-translate-x-0.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 19l-7-7 7-7"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
             </svg>
             Back to Blog
           </a>
-
-          <!-- Theme Toggle and PWA Install -->
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
             <PWAInstallButton client:load />
             <ThemeToggle client:load />
           </div>
@@ -74,51 +106,75 @@ const postUrl = `${config.site.url}/blog/${post.slug}`;
       </div>
     </header>
 
-    <div class="container mx-auto px-3 md:px-4 py-8 max-w-4xl">
-
-      <!-- Article Header -->
-      <article class="md:bg-card md:rounded-lg md:border md:shadow-sm p-4 md:p-8 mb-8">
-        <header class="mb-8 pb-8 border-b">
-          <div class="flex flex-wrap items-center gap-2 mb-4">
-            <Badge client:load className="capitalize">{post.topic}</Badge>
-            {post.tags.map((tag) => (
-              <Badge client:load variant="outline" className="text-xs">
-                #{tag}
-              </Badge>
-            ))}
+    <div class="container mx-auto px-4 md:px-6 max-w-6xl py-10 md:py-16">
+      <div class="lg:grid lg:grid-cols-[14rem_minmax(0,52rem)] lg:gap-14 lg:justify-center">
+        <!-- Desktop sticky TOC -->
+        <aside class="hidden lg:block">
+          <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pb-8">
+            <ArticleToc items={headings} variant="sidebar" client:load />
           </div>
-          <h1 class="text-4xl font-bold mb-4 text-foreground">{post.title}</h1>
-          <p class="text-xl text-muted-foreground mb-4">{post.description}</p>
-          <div class="flex items-center gap-4 text-sm text-muted-foreground">
-            <span class="font-semibold text-foreground">{post.author}</span>
-            <span>•</span>
-            <time datetime={post.date.toISOString()}>{formattedDate}</time>
-            {readTime && (
-              <>
-                <span>•</span>
-                <span>{readTime} min read</span>
-              </>
-            )}
+        </aside>
+
+        <!-- Article -->
+        <article class="min-w-0">
+          <header class="mb-10 md:mb-14">
+            <p class="font-mono text-xs md:text-sm uppercase tracking-[0.18em] text-primary mb-5">
+              {eyebrow}
+            </p>
+            <h1
+              class="text-[2rem] leading-[1.12] md:text-[3.25rem] md:leading-[1.05] tracking-[-0.03em] font-bold text-foreground text-balance mb-5"
+            >
+              {post.title}
+            </h1>
+            <p class="text-lg md:text-xl leading-relaxed text-muted-foreground text-pretty mb-6">
+              {post.description}
+            </p>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground mb-6">
+              <span class="font-semibold text-foreground">{post.author}</span>
+              <span class="text-border">•</span>
+              <time datetime={post.date.toISOString()}>{formattedDate}</time>
+              {
+                readTime && (
+                  <>
+                    <span class="text-border">•</span>
+                    <span>{readTime} min read</span>
+                  </>
+                )
+              }
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <Badge client:load className="capitalize">{post.topic}</Badge>
+              {
+                post.tags.map((tag) => (
+                  <Badge client:load variant="outline" className="text-xs font-normal">
+                    #{tag}
+                  </Badge>
+                ))
+              }
+            </div>
+          </header>
+
+          <!-- Mobile collapsible TOC -->
+          <ArticleToc items={headings} variant="mobile" client:load />
+
+          <!-- Blog Content -->
+          <div class="article-prose" set:html={slotContent} />
+
+          <!-- Social Share Buttons -->
+          <div class="mt-14 pt-8 border-t border-border/70">
+            <SocialShareButtons
+              title={post.title}
+              description={post.description}
+              url={postUrl}
+              shareMessage={post.shareMessage}
+              client:load
+            />
           </div>
-        </header>
 
-        <!-- Blog Content -->
-        <div class="prose prose-2xl max-w-none" set:html={slotContent} />
-
-        <!-- Social Share Buttons -->
-        <div class="my-8">
-          <SocialShareButtons
-            title={post.title}
-            description={post.description}
-            url={postUrl}
-            shareMessage={post.shareMessage}
-            client:load
-          />
-        </div>
-
-        <!-- References Section (if provided) -->
-        <slot name="references" />
-      </article>
+          <!-- References Section (if provided) -->
+          <slot name="references" />
+        </article>
+      </div>
     </div>
   </div>
 </Layout>
