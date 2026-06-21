@@ -1,3 +1,16 @@
+## [1.11.0](https://github.com/AtomiCloud/azide.boron/compare/v1.10.0...v1.11.0) (2026-06-21)
+
+
+### ✨ Features ✨
+
+* Technical Journal blog redesign with mobile-native diagrams ([b608b8d](https://github.com/AtomiCloud/azide.boron/commit/b608b8dec91b68e4ee27b1ec1c4386c053624666))
+
+
+### 🐛 Bug Fixes 🐛
+
+* address review feedback on a11y, hydration, and class merging ([4ec3a9c](https://github.com/AtomiCloud/azide.boron/commit/4ec3a9c470441816413f9658570f3db80946c430))
+* address review feedback on TOC ids, search, and class merging ([6d8a57b](https://github.com/AtomiCloud/azide.boron/commit/6d8a57ba18a3f24f4302b81fdf361a41195a98f9))
+
 ## [1.10.0](https://github.com/AtomiCloud/azide.boron/compare/v1.9.0...v1.10.0) (2026-04-21)
 
 
