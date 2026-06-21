@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export default function LocalityDiagram() {
   // Generate fixed positions for dots - more dots to show same complexity
@@ -73,14 +73,28 @@ export default function LocalityDiagram() {
     { x: 95, y: 92 },
   ];
 
+  // CSS cannot stop SMIL <animate>; pause the SVG timelines (frozen at frame 0)
+  // for users who prefer reduced motion.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    rootRef.current?.querySelectorAll('svg').forEach(svg => {
+      try {
+        svg.setCurrentTime(0);
+        svg.pauseAnimations();
+      } catch {
+        /* SVGSVGElement animation API unavailable — ignore */
+      }
+    });
+  }, []);
+
   return (
-    <div className="my-8 md:my-12">
+    <div className="my-8 md:my-12" ref={rootRef}>
       <style>{`
         .ld-line { transform-box: fill-box; transform-origin: center; }
         .ld-dot { transform-box: fill-box; transform-origin: center; }
         @media (prefers-reduced-motion: reduce) {
           .ld-line, .ld-dot { animation: none; }
-          .ld-anim animate { animation: none; }
         }
       `}</style>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">

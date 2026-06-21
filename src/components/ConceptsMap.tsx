@@ -12,8 +12,12 @@ export default function ConceptsMap() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(false);
+  // Visible before hydration so SSR / no-JS users always see the diagram;
+  // the scroll-reveal only takes over once mounted.
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    setHydrated(true);
     const el = containerRef.current;
     if (!el) return;
     // Respect reduced motion: reveal immediately, skip the staggered transition.
@@ -45,8 +49,8 @@ export default function ConceptsMap() {
 
   // Each layer (and the connector before it) reveals in sequence top-to-bottom.
   const layerStyle = (index: number): React.CSSProperties => ({
-    opacity: revealed ? 1 : 0,
-    transform: revealed ? 'translateY(0)' : 'translateY(10px)',
+    opacity: !hydrated || revealed ? 1 : 0,
+    transform: !hydrated || revealed ? 'translateY(0)' : 'translateY(10px)',
     transition: 'opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1), transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)',
     transitionDelay: `${index * 0.12}s`,
   });

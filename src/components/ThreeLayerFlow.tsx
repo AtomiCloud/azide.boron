@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '../lib/utils';
 
 type Kind = 'edge' | 'normal' | 'domain';
 
@@ -48,7 +49,7 @@ export default function ThreeLayerFlow() {
             const gap = i < gaps.length ? gaps[i] : undefined;
             return (
               <React.Fragment key={s.label}>
-                <div className={`relative rounded-xl border px-4 py-3 text-center ${cardClass}`}>
+                <div className={cn('relative rounded-xl border px-4 py-3 text-center', cardClass)}>
                   {s.kind === 'domain' && (
                     <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-indigo-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
                       Pure Domain
@@ -70,18 +71,20 @@ export default function ThreeLayerFlow() {
                     </svg>
                     {gap.mapper && (
                       <div
-                        className={`rounded-md border px-2.5 py-1 text-center ${
+                        className={cn(
+                          'rounded-md border px-2.5 py-1 text-center',
                           gap.color === 'emerald'
                             ? 'border-emerald-500/40 bg-emerald-500/10'
-                            : 'border-amber-500/40 bg-amber-500/10'
-                        }`}
+                            : 'border-amber-500/40 bg-amber-500/10',
+                        )}
                       >
                         <div
-                          className={`text-[11px] font-bold ${
+                          className={cn(
+                            'text-[11px] font-bold',
                             gap.color === 'emerald'
                               ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-amber-600 dark:text-amber-400'
-                          }`}
+                              : 'text-amber-600 dark:text-amber-400',
+                          )}
                         >
                           {gap.mapper}
                         </div>

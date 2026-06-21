@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { cn } from '../lib/utils';
 
 // Each field knows which context(s) it belongs to. `id` is shared by all three.
 type Ctx = 'billing' | 'shipping' | 'support';
@@ -55,13 +56,13 @@ const CONTEXTS: { key: Ctx; label: string; team: string; color: string; ring: st
 function FieldChip({ name, shared, dim }: { name: string; shared?: boolean; dim?: boolean }) {
   return (
     <span
-      className={
-        'inline-block rounded-md border px-2 py-0.5 font-mono text-[11px] leading-tight transition-all duration-500 ease-in-out ' +
-        (shared
+      className={cn(
+        'inline-block rounded-md border px-2 py-0.5 font-mono text-[11px] leading-tight transition-all duration-500 ease-in-out',
+        shared
           ? 'border-slate-400/60 bg-slate-100 text-slate-700 dark:border-slate-500/60 dark:bg-slate-800 dark:text-slate-200 font-semibold'
-          : 'border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300') +
-        (dim ? ' opacity-30' : ' opacity-100')
-      }
+          : 'border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300',
+        dim ? 'opacity-30' : 'opacity-100',
+      )}
     >
       {name}
     </span>
@@ -137,12 +138,12 @@ export default function BoundedContexts() {
         {/* Step caption / legend */}
         <div className="mb-4 flex items-center justify-center gap-2 text-center">
           <span
-            className={
-              'rounded-full px-3 py-1 text-xs font-semibold transition-colors duration-500 ease-in-out ' +
-              (split
+            className={cn(
+              'rounded-full px-3 py-1 text-xs font-semibold transition-colors duration-500 ease-in-out',
+              split
                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300')
-            }
+                : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+            )}
           >
             {!split
               ? 'One shared Order — every team couples to it'
@@ -154,10 +155,10 @@ export default function BoundedContexts() {
 
         {/* The monolith card */}
         <div
-          className={
-            'mx-auto overflow-hidden transition-all duration-700 ease-in-out ' +
-            (split ? 'max-h-0 opacity-0 -translate-y-2' : 'max-h-[400px] opacity-100')
-          }
+          className={cn(
+            'mx-auto overflow-hidden transition-all duration-700 ease-in-out',
+            split ? 'max-h-0 opacity-0 -translate-y-2' : 'max-h-[400px] opacity-100',
+          )}
           aria-hidden={split}
         >
           <div className="mx-auto max-w-md rounded-lg border border-rose-400/50 dark:border-rose-500/40 bg-rose-50/50 dark:bg-rose-950/20 p-4">
@@ -175,10 +176,10 @@ export default function BoundedContexts() {
 
         {/* The three context cards */}
         <div
-          className={
-            'transition-all duration-700 ease-in-out ' +
-            (split ? 'max-h-[900px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden')
-          }
+          className={cn(
+            'transition-all duration-700 ease-in-out',
+            split ? 'max-h-[900px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden',
+          )}
           aria-hidden={!split}
         >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -189,14 +190,13 @@ export default function BoundedContexts() {
               return (
                 <div
                   key={c.key}
-                  className={
-                    'relative rounded-lg border p-4 transition-all duration-500 ease-in-out ' +
-                    c.ring +
-                    ' ' +
-                    c.bg +
-                    (isDimmed ? ' opacity-50' : ' opacity-100') +
-                    (isChanging ? ' ring-1 ring-emerald-400/70 dark:ring-emerald-400/60' : '')
-                  }
+                  className={cn(
+                    'relative rounded-lg border p-4 transition-all duration-500 ease-in-out',
+                    c.ring,
+                    c.bg,
+                    isDimmed ? 'opacity-50' : 'opacity-100',
+                    isChanging && 'ring-1 ring-emerald-400/70 dark:ring-emerald-400/60',
+                  )}
                   style={{ transitionDelay: split ? `${idx * 120}ms` : '0ms' }}
                 >
                   {/* "change isolated here" badge */}
@@ -205,7 +205,7 @@ export default function BoundedContexts() {
                       + new field here only
                     </span>
                   )}
-                  <div className={'mb-1 text-center text-sm font-bold ' + c.text}>{c.label}</div>
+                  <div className={cn('mb-1 text-center text-sm font-bold', c.text)}>{c.label}</div>
                   <div className="mb-3 text-center text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     {c.team}
                   </div>

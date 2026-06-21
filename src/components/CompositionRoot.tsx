@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { cn } from '../lib/utils';
 
 type Phase = 'assemble' | 'freeze' | 'flow' | 'reset';
 
@@ -213,7 +214,7 @@ export default function CompositionRoot() {
             return (
               <span
                 key={p}
-                className={`px-2.5 py-1 rounded-full border transition-colors duration-300 ${isOn ? colors[p] : off}`}
+                className={cn('px-2.5 py-1 rounded-full border transition-colors duration-300', isOn ? colors[p] : off)}
               >
                 {labels[p]}
               </span>

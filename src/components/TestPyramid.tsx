@@ -192,7 +192,7 @@ export default function TestPyramid() {
               const cx = 100;
               const labelY = (t.top + t.bottom) / 2;
               return (
-                <g key={t.label} className="tp-tier" style={{ animationDelay: `${revealDelay(t.order)}s` }}>
+                <g key={t.label}>
                   <polygon
                     points={tierPoints(t, topHalf)}
                     fill={t.fill}
