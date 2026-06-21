@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { cn } from '../lib/utils';
 
 interface TocItem {
   id: string;
@@ -70,17 +71,17 @@ export default function ArticleToc({ items, variant = 'sidebar' }: Props) {
             <a
               href={`#${item.id}`}
               onClick={e => scrollToId(e, item.id)}
-              className={[
+              className={cn(
                 'group flex items-start gap-2 rounded-md py-1.5 text-sm leading-snug transition-colors',
                 item.level === 3 ? 'pl-5' : 'pl-3',
                 isActive ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground',
-              ].join(' ')}
+              )}
             >
               <span
-                className={[
+                className={cn(
                   'mt-[0.45rem] h-px w-3 shrink-0 transition-all',
                   isActive ? 'bg-primary w-4' : 'bg-border group-hover:bg-muted-foreground',
-                ].join(' ')}
+                )}
               />
               <span className="text-pretty">{item.text}</span>
             </a>

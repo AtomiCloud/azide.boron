@@ -46,13 +46,19 @@ const slotContent = rawContent.replace(
       .replace(/\s+/g, ' ')
       .trim();
     if (!text) return match;
+    const level = tag === 'h2' ? 2 : 3;
+    // If the heading already declares an id, use it for the TOC (don't desync).
+    const existing = attrs.match(/\sid=["']([^"']+)["']/);
+    if (existing) {
+      headings.push({ id: existing[1]!, text, level });
+      return match;
+    }
     let id = slugify(text) || `section-${headings.length + 1}`;
     let n = 2;
     const base = id;
     while (usedIds.has(id)) id = `${base}-${n++}`;
     usedIds.add(id);
-    headings.push({ id, text, level: tag === 'h2' ? 2 : 3 });
-    if (/\sid=/.test(attrs)) return match; // respect an existing id
+    headings.push({ id, text, level });
     return `<${tag}${attrs} id="${id}">${inner}</${tag}>`;
   },
 );

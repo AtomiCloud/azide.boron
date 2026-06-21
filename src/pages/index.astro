@@ -318,7 +318,8 @@ const searchContent = (post: (typeof allPosts)[number]) =>
       const slug = href?.split('/').pop();
 
       const matchesTopic = currentTopic === 'all' || topic === currentTopic;
-      const matchesSearch = !currentSearch || matchingSlugs.has(slug || '');
+      // While the search index is still loading, don't hide everything.
+      const matchesSearch = !currentSearch || !searchIndex || matchingSlugs.has(slug || '');
 
       if (matchesTopic && matchesSearch) {
         cardElement.style.display = '';
