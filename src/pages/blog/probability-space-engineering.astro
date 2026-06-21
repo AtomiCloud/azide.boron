@@ -1,0 +1,381 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { getBlogPost } from '../../lib/blog-posts';
+import CodeBlock from '../../components/CodeBlock.astro';
+import ProbabilitySpace from '../../components/ProbabilitySpace';
+import CloudShift from '../../components/CloudShift';
+import TwoInputClouds from '../../components/TwoInputClouds';
+
+export const frontmatter = {
+  title: 'Probability Space Engineering',
+  description:
+    'A model call does not compute the answer. It materializes one sample from a possibility space fixed by your input and the model. Every prompting technique is one act: shaping that space until it lands on the solution.',
+  author: 'Adelphi Liong',
+  date: '2026-06-21',
+  topic: 'tech' as const,
+  tags: ['llm', 'ai', 'probability', 'prompt-engineering'],
+  shareMessage: 'Every prompting trick is the same move: shaping a probability cloud onto the solution.',
+};
+
+const post = getBlogPost('probability-space-engineering')!;
+---
+
+<BlogPostLayout post={post}>
+  <p class="text-lg leading-relaxed mb-6">
+    <em>
+      A model call does not compute <em>the</em> answer. It draws <em>one sample</em> from a space of answers
+      that was already fixed the moment you pressed enter. Once you see calls that way, every prompting
+      trick, every agent pattern, every "best practice" collapses into a single discipline: you are
+      shaping that space until it lands on the thing you wanted.
+    </em>
+  </p>
+
+  <p class="mb-6">
+    We talk about prompting as if it were instruction. You tell the model what to do, it does it, and
+    if it does it badly you tell it more clearly. That framing is comfortable because it is how we talk
+    to people. It is also wrong in a way that quietly caps how good you can get.
+  </p>
+
+  <p class="mb-6">
+    A model does not receive an instruction and execute it. It receives a sequence of tokens and produces
+    a distribution over what comes next, then samples from that distribution, then does it again. Nothing
+    in that loop "decides" to give you the answer. The loop gives you <em>a</em> answer — one of many it
+    could have given — and the set of answers it could have given is the real object you are working with.
+    This post is about that object, what determines its shape, and the handful of operations that move it.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Three regions</h2>
+
+  <p class="mb-6">
+    Hold three things in mind at once. Call them regions of the same picture.
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>
+      <strong>The solution space</strong> — the set of outputs you would actually accept. The correct
+      function, the working migration, the answer that passes review. Often narrow. Sometimes a single point.
+    </li>
+    <li>
+      <strong>The possibility space</strong> — everything <em>this</em> input, run through <em>this</em>
+      model, could produce. Not what it usually produces; what it <em>can</em>. Picture a cloud: dense in
+      the middle, thinning at the edges, with a definite center of mass and a definite spread.
+    </li>
+    <li>
+      <strong>The materialization</strong> — one run. A single point sampled out of the cloud. It is the
+      only part you ever actually see, which is exactly why the picture is so easy to miss.
+    </li>
+  </ul>
+
+  <p class="mb-6">
+    Here is the move that makes the whole frame click. Run the same input three times. You get three
+    different outputs. The naive reading is "the model is being random." The accurate reading is: the
+    <em>possibility space was identical all three times</em> — same input, same model, same cloud — and
+    you simply sampled a different point from it on each run. The variation between runs is not the model
+    changing its mind. It is the cloud being sampled.
+  </p>
+
+  <ProbabilitySpace client:load />
+
+  <p class="mb-6">
+    This reframes what a "good run" is. A good run is not skill; it is a favorable sample. If you got a
+    great answer once and a mediocre answer the next time, nothing about the model improved or degraded.
+    The cloud stayed put. You just landed in a different part of it. Which means the lever that actually
+    matters is not the individual sample — it is the <strong>shape and position of the cloud</strong>.
+  </p>
+
+  <blockquote class="border-l-4 border-primary pl-6 py-1 my-6 italic text-muted-foreground">
+    The materialization is what you see. The possibility space is what you engineer. Confusing the two
+    is the root of most prompting frustration.
+  </blockquote>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The job, geometrically</h2>
+
+  <p class="mb-6">
+    Now overlay the two spaces. Most of the time, the possibility cloud does <em>not</em> sit on the
+    solution. Its center of mass is somewhere nearby — plausible, confident, almost right — and the
+    solution is off to one side. Sometimes the solution is inside the cloud but at a thin, low-probability
+    edge, so you only hit it occasionally. Either way, the geometry tells you the whole job:
+  </p>
+
+  <blockquote class="border-l-4 border-primary pl-6 py-1 my-6 italic text-muted-foreground">
+    Engineering an LLM is shifting the cloud onto the solution, and shrinking it so it stays there.
+  </blockquote>
+
+  <CloudShift client:load />
+
+  <p class="mb-6">
+    <strong>Shift</strong> moves the center of mass — toward the kind of answer you want. <strong>Shrink</strong>
+    reduces the spread — so the answers you might get are all near the target instead of scattered across a
+    wide neighborhood. Most techniques you already use do one, the other, or both. The trick is to stop
+    naming them by their mechanics ("add few-shot examples," "use a reviewer") and start naming them by
+    what they do to the cloud.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">A concrete handle</h2>
+
+  <p class="mb-6">
+    Abstractions are cheap; here is one you can feel. Ask a model:
+  </p>
+
+  <CodeBlock lang="text" code={`Write me an algorithm in Ruby.`} />
+
+  <p class="mb-6">
+    The possibility space is enormous. It might give you a linear search, a binary search, a bubble sort,
+    a quicksort, a graph traversal — all valid completions of that input. The cloud is broad because the
+    input <em>permits</em> breadth. Now ask:
+  </p>
+
+  <CodeBlock lang="text" code={`Write me a binary search in Ruby.`} />
+
+  <p class="mb-6">
+    The cloud collapses. Almost every sample is now some variation of binary search. You did not make the
+    model smarter. You handed it a tighter input, and a tighter input produces a tighter cloud. That is
+    shrink, achieved purely through specificity.
+  </p>
+
+  <TwoInputClouds client:load />
+
+  <p class="mb-6">
+    This is why vague prompts feel unreliable and precise ones feel dependable. It is not reliability in
+    any moral sense — it is variance. A broad cloud has high variance, so consecutive samples land far
+    apart and the bad ones are common. A tight cloud has low variance, so even an unlucky sample is close
+    to the target. "Be more specific" is not etiquette. It is variance reduction.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The two knobs: input and model</h2>
+
+  <p class="mb-6">
+    The possibility space is a function of exactly two things: <strong>the input</strong> and
+    <strong>the model</strong>. That is the whole equation. Everything you can do to change the output,
+    you do by turning one of those two knobs.
+  </p>
+
+  <p class="mb-6">
+    The input knob is the one you operate constantly — every word, every example, every file you put in
+    context reshapes the cloud. The model knob is coarser but real: the <em>same input</em> lands on a
+    different cloud depending on which model receives it. Give several models the bare prompt "write an
+    algorithm in Ruby" and they don't just vary in quality — they vary in <em>where their cloud sits</em>:
+  </p>
+
+  <CodeBlock
+    lang="text"
+    code={`Input: "write an algorithm in Ruby"   (illustrative tendencies)
+
+  Model A   ->  tends to bubble sort        (teaches the classic example)
+  Model B   ->  tends to quicksort          (reaches for the "real" one)
+  Model C   ->  tends to binary search      (assumes "search" by default)
+  Model D   ->  tends to linear search      (picks the simplest thing)
+
+Same input. Four different centers of mass.`}
+  />
+
+  <p class="mb-6">
+    The table is illustrative, not a benchmark — the point is the <em>shape</em> of the finding, which
+    holds up whenever you measure it: identical inputs produce systematically different clouds across
+    models. This is the
+    <a class="text-primary hover:underline" href="/blog/jagged-intelligence">jagged intelligence</a>
+    surface, made concrete. The capability frontier is jagged — superb here, hopeless there, with no smooth
+    slope between — and "where the cloud sits for a given input" is a way to actually <em>measure</em> that
+    jaggedness instead of just describing it. The surface stops being a metaphor and becomes a coordinate
+    you can read off.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Context is a force, not free information</h2>
+
+  <p class="mb-6">
+    Here is where the model overturns a habit almost everyone has. We treat context as additive: more
+    context, more information, better answer. But context does not add information to a neutral container.
+    Context <strong>is the input</strong>, and the input <em>is</em> what fixes the cloud. So every token
+    you add is a force applied to the space — and forces have direction. Some of them push the cloud
+    <em>away</em> from the solution.
+  </p>
+
+  <p class="mb-6">
+    Concretely, two failure modes:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>
+      <strong>Context rot.</strong> As a conversation grows long, the input is dominated by accumulated
+      history — earlier attempts, dead ends, stale assumptions. The cloud drifts toward "more of this
+      thread" and away from a clean solution. The model isn't getting tired; its input is getting heavy.
+    </li>
+    <li>
+      <strong>Context pollution.</strong> A single wrong fact, a misleading example, or a confident bad
+      attempt earlier in the input drags the center of mass toward itself. One poisoned token can shift
+      the whole cloud, and adding <em>more</em> context after it rarely pulls it back — it just adds noise
+      around a center that is already in the wrong place.
+    </li>
+  </ul>
+
+  <p class="mb-6">
+    This is precisely <em>why</em> a stateless, fresh-context loop works — the central move of the
+    <a class="text-primary hover:underline" href="/blog/autonomous-agents">autonomous agents</a> practice.
+    If context is a force and a long thread pushes the cloud off-target, then the cure is not to argue the
+    model back on course inside the same thread. The cure is to <em>discard the thread</em> and resample
+    from a clean input. Statelessness isn't tidiness. It is refusing to let accumulated forces deform the
+    space you are trying to aim.
+  </p>
+
+  <blockquote class="border-l-4 border-primary pl-6 py-1 my-6 italic text-muted-foreground">
+    More context is not more information. It is a different cloud — sometimes a worse-placed one.
+  </blockquote>
+
+  <p class="mb-6">
+    If you want the ground-level version of what "input" and "context" mean — the chat is just a view over
+    a fixed token budget — that is the
+    <a class="text-primary hover:underline" href="/blog/how-llms-work">how LLMs actually work</a> primer.
+    This post is what that primer is pointing at.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The operations catalog</h2>
+
+  <p class="mb-6">
+    Once you have the frame, the entire toolbox of "LLM techniques" stops being a list of tricks to memorize
+    and becomes a small set of operations on the space. Each one does exactly one of three things: it
+    <strong>shifts the cloud</strong>, it <strong>shrinks the cloud</strong>, or — the strongest move — it
+    <strong>shrinks the solution space itself</strong>. Here is the catalog.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Fresh-context loops — resample from a clean space</h3>
+
+  <p class="mb-6">
+    Discard the current input and start over. When a run anchors on a bad approach, you cannot easily talk
+    it out of the anchor, because the anchor <em>is part of the input</em> shaping the cloud. A fresh context
+    resamples from a clean space that never had the anchor. It does not improve the model; it escapes a bad
+    position. This is the loop from the agents post, viewed from the theory side.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Implementer + reviewer — a critique that shifts the cloud</h3>
+
+  <p class="mb-6">
+    Have one call produce an answer, a second call critique it, and a third call revise using the critique.
+    The reviewer's output becomes an <em>intermediate input</em> to the revision — and a good critique points
+    directly at the gap between where the cloud sits and where the solution is. So the revision's cloud is
+    shifted toward the solution by exactly the vector the reviewer named. It is the same shape as a GAN:
+    a generator and a discriminator, except the discriminator's signal is delivered as context rather than
+    as a gradient.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Multi-reviewer — disjoint critiques that shrink the cloud</h3>
+
+  <p class="mb-6">
+    Add more reviewers, each watching a different axis — correctness, security, style, performance. Each
+    disjoint critique constrains the revision along its own dimension, and constraints compound: the
+    surviving cloud is the intersection of all of them, which is smaller than any single one. The catch is
+    in the word <em>disjoint</em>. Two reviewers that watch the same axis don't intersect to anything new;
+    they overlap, and overlap is diminishing returns. The value is in coverage, not headcount.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Lint / dead-code pre-filtering — fix the ratio before the reviewer</h3>
+
+  <p class="mb-6">
+    Run cheap deterministic filters — a linter, a dead-code pass, a compile check — to delete obviously bad
+    candidates <em>before</em> a model reviewer ever sees them. The reviewer then judges a population that is
+    already enriched for good candidates. You haven't made the reviewer smarter; you've improved the
+    good-to-bad <em>ratio</em> of what it has to judge, which is often the cheaper win.
+  </p>
+
+  <p class="mb-6">
+    There is a subtlety here worth naming — call it <strong>the Ioannidis problem</strong>, after the
+    "why most published findings are false" argument. A filter with a fixed accuracy behaves
+    <em>completely differently</em> at different base rates. Run a decent reviewer over a population that is
+    mostly garbage and most of what it flags as "good" will still be garbage — false positives swamp true
+    ones when good candidates are rare. The reviewer's quality is only half the story; the other half is the
+    ratio of good to bad candidates flowing into it. Improving the ratio (pre-filtering) and improving the
+    judge (better reviewer) are <em>both</em> levers, and ignoring the ratio is how good reviewers still
+    produce bad pipelines.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Divide &amp; conquer — one prompt per item</h3>
+
+  <p class="mb-6">
+    Asking one broad prompt to handle ten things spreads the cloud thin across all of them; coverage on each
+    individual item suffers because the space has to cover the union. Splitting into ten prompts — one per
+    item — gives each its own tight, well-placed cloud. Narrower inputs, narrower clouds, better coverage. It
+    is the specificity lever applied structurally rather than per-word.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Deterministic reduction — shrink the solution space itself</h3>
+
+  <p class="mb-6">
+    The strongest move, when it applies. Instead of asking the model to <em>do</em> the task, ask it to write
+    a <strong>rule or a script</strong> that does the task — then run that script deterministically over every
+    case. Every other operation in this catalog manipulates the <em>cloud</em>: shift it, shrink it, resample
+    it. This one manipulates the <em>solution space</em>. A correct script doesn't sample an answer per case;
+    it computes the same answer every time. You have collapsed the solution space to a point and removed the
+    probabilistic layer entirely from the cases that follow.
+  </p>
+
+  <CodeBlock
+    lang="text"
+    code={`Weak  : "rename every variable in these 400 files to camelCase"
+        -> 400 samples from 400 clouds; a few will drift.
+
+Strong: "write a codemod that renames snake_case to camelCase,
+         then run it over all 400 files"
+        -> one sampled artifact (the script), then 400 deterministic
+           applications. No cloud per file.`}
+  />
+
+  <p class="mb-6">
+    You still sample once — when the model writes the script. But you sample <em>once</em> for an artifact you
+    can read, test, and reuse, instead of once per case for outputs you have to trust blind. Whenever a task
+    can be reduced to a rule, reduce it. It is the difference between aiming a probabilistic process at every
+    instance and aiming it a single time at the generator of a deterministic one.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The callback</h2>
+
+  <p class="mb-6">
+    Now turn back to the
+    <a class="text-primary hover:underline" href="/blog/autonomous-agents">autonomous agents</a> practice and
+    read it again through this lens. Every move in it was probability-space engineering the whole time:
+  </p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>
+      <strong>Declarative goals</strong> — writing the end-state instead of the keystrokes — is shrinking
+      the cloud by making the input specific about the target rather than the path.
+    </li>
+    <li>
+      <strong>Stateless loops</strong> are fresh-context resampling: refusing to let an accumulated thread
+      deform the space.
+    </li>
+    <li>
+      <strong>Looping</strong> instead of negotiating is buying more samples from a well-placed cloud rather
+      than trying to argue a single sample into shape.
+    </li>
+    <li>
+      <strong>A good spec</strong> — a sharp definition of "done" with a checkable definition of done — is
+      doing both jobs at once: it shifts the cloud toward the target <em>and</em> shrinks the solution space
+      to something you can actually verify a sample landed in.
+    </li>
+  </ul>
+
+  <p class="mb-6">
+    None of those practices were arbitrary craft, and none of them were about treating the model like a junior
+    teammate. They were all the same act, performed at different scales: take a possibility space fixed by your
+    input and your model, and shift and shrink it until it sits on the solution. The practice is the theory,
+    applied. Once you can see the cloud, you stop collecting techniques and start asking one question of every
+    situation — <em>which way is the cloud off, and which operation moves it back?</em>
+  </p>
+
+  <div class="mt-16 pt-8 border-t border-border">
+    <p class="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-3">Related</p>
+    <ul class="list-disc list-inside space-y-1 text-muted-foreground">
+      <li>
+        <a class="text-primary hover:underline" href="/blog/autonomous-agents">Autonomous Agents</a> — the
+        practice this theory explains
+      </li>
+      <li>
+        <a class="text-primary hover:underline" href="/blog/jagged-intelligence">Jagged Intelligence</a> — the
+        surface, made measurable
+      </li>
+      <li>
+        <a class="text-primary hover:underline" href="/blog/how-llms-work">How LLMs Actually Work</a> — what
+        "input" means
+      </li>
+    </ul>
+  </div>
+</BlogPostLayout>

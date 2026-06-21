@@ -1,0 +1,420 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { getBlogPost } from '../../lib/blog-posts';
+import CodeBlock from '../../components/CodeBlock.astro';
+import SteeringLoop from '../../components/SteeringLoop';
+import DeclarativeVsImperative from '../../components/DeclarativeVsImperative';
+import TriageSpecPlan from '../../components/TriageSpecPlan';
+import EvolutionLoop from '../../components/EvolutionLoop';
+
+export const frontmatter = {
+  title: 'Autonomous Agents',
+  description:
+    'Stop steering an LLM three minutes at a time. Make the goal a file, loop on it, and push your judgment to the edges — so an agent runs autonomously in the middle.',
+  author: 'Adelphi Liong',
+  date: '2026-06-21',
+  topic: 'tech' as const,
+  tags: ['llm', 'ai', 'agents', 'workflow'],
+  shareMessage: 'How to run an LLM autonomously instead of babysitting it all day',
+};
+
+const post = getBlogPost('autonomous-agents')!;
+---
+
+<BlogPostLayout post={post}>
+  <p class="text-lg leading-relaxed mb-6">
+    <em
+      >You can spend a whole day with an AI coding agent and produce one feature. Not because the work was hard — because
+      you never stopped steering. Three minutes prompting, three minutes waiting, a correction, another correction. The
+      fix isn't a better prompt. It's a different shape of work: push your judgment to the edges and let the agent run on
+      its own in the middle.</em
+    >
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The hour you already know</h2>
+
+  <p class="mb-6">
+    Here's a typical hour. You ask the agent for a feature — say, a soft-delete endpoint for orders. It comes back with
+    something that's about 70% right. The endpoint exists, but it hard-deletes the row instead of flagging it. You point
+    that out. It fixes the delete, but now deleted orders 404 on the read path. You correct that. It patches the read
+    path, and a list-endpoint test breaks because deleted rows are showing up. You correct again.
+  </p>
+
+  <p class="mb-6">
+    Each round is small. Three minutes to write the correction, three minutes to wait for the result. But stack them up
+    and the shape becomes obvious: <strong>you are the loop</strong>. The agent never runs more than one step without
+    you. You are holding the goal in your head, re-deriving it every turn, nudging the work back on course one sentence
+    at a time. That's not delegation. That's manual driving with extra latency.
+  </p>
+
+  <SteeringLoop client:load />
+
+  <p class="mb-6">
+    The trap is that every individual turn feels productive. It <em>did</em> do something. It <em>is</em> faster than
+    typing the code yourself. So you keep going, and the day evaporates, and at the end you've shipped a ticket you could
+    have written by hand in the same time — except now you're tired from context-switching every six minutes.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The shift: work to the front, judgment to the edges</h2>
+
+  <p class="mb-6">
+    There's an old move from functional programming that solves a structurally identical problem. In FP, side effects
+    are the dangerous part — reading files, hitting the network, mutating state. The discipline is to push those effects
+    to the <em>boundary</em> of the program and keep a <strong>pure core</strong> in the middle: a big, deterministic,
+    easy-to-reason-about region with no surprises, wrapped by a thin shell where the messy real-world interaction
+    happens.
+  </p>
+
+  <p class="mb-6">
+    Running an agent autonomously is the same move. The "side effects" here are the parts that genuinely need a human:
+    deciding what to build, judging whether a risky tradeoff is acceptable, reviewing whether the result is any good.
+    Push those to the edges. Put <strong>planning and judgment at the front</strong>, <strong
+      >autonomous execution in the middle</strong
+    >, and <strong>review at the end</strong>. The middle becomes a pure core the agent can grind through without you in
+    it.
+  </p>
+
+  <blockquote class="border-l-4 border-primary pl-6 py-1 my-6 italic text-muted-foreground">
+    Stop steering an LLM three minutes at a time. Make the goal a file, loop on it, and push your judgment to the edges.
+  </blockquote>
+
+  <p class="mb-6">
+    The payoff isn't only that you stop babysitting. It's that you can take <em>bigger</em> tickets. When your bandwidth
+    goes to direction and risk instead of keystroke-level steering, the size of the work you can supervise goes up. You
+    spend your attention where it's scarce — deciding and reviewing — and let the cheap, parallelizable part run
+    unattended.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Two failure modes, two different fixes</h2>
+
+  <p class="mb-6">
+    Before you can automate the middle, you have to understand <em>why</em> an unattended agent goes wrong. There are two
+    distinct failure modes, and conflating them is why most "just write a better prompt" advice fails.
+  </p>
+
+  <p class="mb-6">
+    <strong>Reliability.</strong> The model knows what to do and could do it, but doesn't. It forgets an instruction you
+    gave three messages ago. It skips a convention the codebase obviously follows. It declares victory without checking
+    its own work. It drifts off the task onto something adjacent. This isn't a thinking problem — it's a
+    <em>follow-through</em> problem.
+  </p>
+
+  <p class="mb-6">
+    <strong>Capability.</strong> The model genuinely can't get there from where it's standing. It reasons badly about the
+    problem, builds on a wrong assumption, or brute-forces something that needed insight. More reminders won't help,
+    because reminding it isn't the issue — it never had the right footing to begin with.
+  </p>
+
+  <p class="mb-6">
+    These need opposite fixes. Reliability is fixed by <strong>structure</strong>: a fixed goal and a fresh, disciplined
+    loop. Capability is fixed by <strong>information</strong>: a spec that gives the model the footing a ticket assumes
+    but never states. The <em>why</em> underneath both — why a stable goal shapes better output, why more context changes
+    what the model can do — is the subject of
+    <a class="text-primary hover:underline" href="/blog/probability-space-engineering">Probability Space Engineering</a>.
+    This post is the practice; treat that one as the theory it rests on.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Reliability → stateless loops</h2>
+
+  <p class="mb-6">
+    Reliability problems come from two sources: a goal that moves, and a context that accumulates baggage. Fix both and
+    most "it forgot / it drifted" failures disappear.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Declarative: put the goal in a file</h3>
+
+  <p class="mb-6">
+    A chat is <em>imperative</em>. Each message is an instruction relative to the current state, and the agent steers off
+    your <em>last sentence</em>. That's exactly why the morning grind drifts: you said "fix the read path," so it fixed
+    the read path and lost track of the list endpoint. The target moved because your instructions are a moving target.
+  </p>
+
+  <p class="mb-6">
+    The fix is to make the goal <strong>declarative</strong>: write down the <em>end state</em>, not the keystrokes to
+    get there. Put it in a file — call it <code>goal.md</code> — and describe what "done" looks like. A declarative goal
+    doesn't move when you stop talking, because it isn't made of your talking.
+  </p>
+
+  <DeclarativeVsImperative client:load />
+
+  <p class="mb-6">
+    Notice what the goal file does: it states every part of the end state at once — soft delete sets a flag, reads
+    include deleted rows with a marker, the list excludes them by default, tests pass. No single instruction can knock
+    the others out, because they're all written down together. The agent re-reads the whole thing every time.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Stateless: every loop starts fresh</h3>
+
+  <p class="mb-6">
+    The second source of unreliability is conversational baggage. A long chat carries dead ends, abandoned approaches,
+    half-corrected mistakes, and your increasingly frustrated tone — all of which sit in the context and pull on the next
+    response. The fix is to make each iteration <strong>stateless</strong>. Every loop starts clean:
+  </p>
+
+  <ol class="list-decimal list-inside mb-6 space-y-2">
+    <li>Read the goal and the current state of the code.</li>
+    <li>Make as much progress toward the goal as it can.</li>
+    <li>Write evidence of what it did (and what's left).</li>
+    <li>Exit.</li>
+  </ol>
+
+  <p class="mb-6">
+    Then the next iteration starts a fresh context and does the same thing — reading the same fixed goal and whatever
+    code now exists. There's no growing transcript to rot. The only state that survives between loops is the goal (which
+    doesn't change) and the code (which is the actual work). That's the whole point: the agent's memory <em>is</em> the
+    repository, not the conversation.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">Why looping beats orchestrating</h3>
+
+  <p class="mb-6">
+    There's a temptation to reach for elaborate multi-agent schemes — agents that collaborate, orchestrate sub-agents,
+    negotiate, or vote. They sound sophisticated. They're also a nightmare to build, debug, and reason about, because the
+    moment two agents share state you've created a distributed system with all the race conditions and emergent
+    weirdness that implies.
+  </p>
+
+  <p class="mb-6">
+    A single looping agent is the opposite. It's one prompt, one file, and one stop condition. You can read the whole
+    thing. When it misbehaves, you look at the goal, the code, and the prompt — three concrete things — and you'll find
+    the problem. Simplicity isn't a consolation prize here; it's the feature. A loop you understand beats an orchestra
+    you don't.
+  </p>
+
+  <p class="mb-6">The mechanics are almost embarrassingly small. The re-used prompt is roughly:</p>
+
+  <CodeBlock
+    lang="text"
+    code={`Read goal.md and the current code.
+
+Implement the goal. Verify it is 100% done —
+run the tests, check every item in the end state.
+If anything is incomplete or broken, fix it.
+
+When you finish, report what you did.
+If the goal was already fully met before you
+started, reply exactly: ALREADY COMPLETED`}
+  />
+
+  <p class="mb-6">
+    You run that prompt. The agent works, then exits. A stop-hook fires the same prompt again into a fresh context. It
+    works again. This repeats — prompt → stop-hook → prompt → … — until the agent reads the goal, finds everything
+    already true, and replies <code>ALREADY COMPLETED</code>. That string is the stop condition. The loop halts.
+  </p>
+
+  <CodeBlock
+    lang="text"
+    code={`loop:
+  run prompt (fresh context)
+    → agent reads goal + code
+    → makes progress, writes evidence, exits
+  stop-hook checks the last reply
+    → "ALREADY COMPLETED"?  yes → done
+                            no  → loop again`}
+  />
+
+  <p class="mb-6">
+    In practice you collapse all of this behind a single command — a <code>/goal</code>-style entry point that points the
+    loop at your goal file and runs it to completion. You write the goal, you type one command, and you walk away. That's
+    the autonomous middle: no steering, no babysitting, just a fixed target and a fresh loop grinding toward it.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Capability → specs</h2>
+
+  <p class="mb-6">
+    A reliable loop will faithfully execute a bad plan. So the loop only solves half the problem. The other half is
+    making sure the goal it loops on is actually <em>correct</em> — and that's a capability problem, fixed with
+    information.
+  </p>
+
+  <p class="mb-6">
+    Here's the root issue. A ticket is written <strong>human to human</strong>. It assumes the reader already knows the
+    codebase, knows the conventions, knows who to ask, and — crucially — will <em>push back</em> when something is
+    ambiguous or wrong. A human engineer reads "add soft delete to orders" and immediately asks: soft delete how? Do
+    existing reads need to change? What about the audit log? Does this cascade to order items?
+  </p>
+
+  <p class="mb-6">
+    An LLM doesn't do that. It won't say "I'm confused." It will <strong>confidently guess</strong>, fill the gaps with
+    plausible-sounding assumptions, and present the result as if it were certain. The ticket's missing context didn't
+    stop it — it just got silently invented. That's the capability failure: not bad reasoning in a vacuum, but reasoning
+    from a blank you never noticed it was filling.
+  </p>
+
+  <p class="mb-6">The fix is to front-load the thinking in three steps, in order.</p>
+
+  <TriageSpecPlan client:load />
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">1. Triage — interrogate the ticket</h3>
+
+  <p class="mb-6">
+    Before anything else, surface every assumption, gap, and risk the ticket carries — and fact-check each one against
+    the actual code. This is interrogation, not implementation. The agent's job here is to ask the questions a senior
+    engineer would ask, then go read the repo to answer as many as it can and flag the rest for you.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">2. Spec — declare what "done" means</h3>
+
+  <p class="mb-6">
+    Once the unknowns are resolved, declare the target: a <strong>Definition of Done</strong>. This is behaviour, not
+    code. It covers the functional requirements (what it does), the non-functional ones (performance, security,
+    compatibility), how each will be validated, and the pre- and post-conditions. No implementation — just an unambiguous
+    description of the world after the change. This <em>is</em> the goal file the loop will run on.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">3. Plan — decompose into verifiable slices</h3>
+
+  <p class="mb-6">
+    Finally, decompose the spec into <strong>committable, independently verifiable, file-level slices</strong>. Each
+    slice is a small unit that can be implemented and checked on its own — ideally one that maps to a clean commit. This
+    is what lets the loop make discrete, evidence-backed progress instead of attempting the whole thing in one shapeless
+    pass.
+  </p>
+
+  <p class="mb-6">
+    The order is not negotiable. You can't write a Definition of Done while your assumptions are still unverified — you'd
+    be specifying a fantasy. And you can't decompose into slices before you know what the whole is. Triage feeds spec;
+    spec feeds plan. Skip a step and the error propagates into everything downstream.
+  </p>
+
+  <p class="mb-6">Walk the soft-delete example through it:</p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>
+      <strong>Triage</strong> reads the order model and finds there's no <code>deleted_at</code> column, that three read
+      endpoints touch orders, and that order items reference orders by foreign key. It flags one open question: should
+      deleting an order soft-delete its items too? You answer: no, items stay.
+    </li>
+    <li>
+      <strong>Spec</strong> declares the Definition of Done: a <code>deleted_at</code> column exists; delete sets it;
+      single-order reads return deleted orders with a flag; the list endpoint excludes them by default; order items are
+      untouched; all existing tests still pass and new tests cover each rule.
+    </li>
+    <li>
+      <strong>Plan</strong> slices it: (1) migration for the column, (2) the delete handler, (3) the read-path flag, (4)
+      the list-endpoint filter, (5) tests. Five commits, each verifiable on its own.
+    </li>
+  </ul>
+
+  <p class="mb-6">
+    The list-endpoint regression that ate your morning earlier? It was decided in slice 4, on purpose, before a single
+    line was written. That's the difference front-loading makes.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The whole package</h2>
+
+  <p class="mb-6">
+    Put the two halves together and the picture is clean. <strong>A good plan covers capability</strong> — it gives the
+    model the footing the ticket assumed. <strong>A reliable loop covers reliability</strong> — it executes that plan
+    without drifting or forgetting. Front-load the thinking; automate the doing. The human is at the front (deciding what
+    "done" means) and at the end (judging whether it's any good), and absent from the middle.
+  </p>
+
+  <p class="mb-6">The ticket-to-PR flow falls out of this naturally:</p>
+
+  <ol class="list-decimal list-inside mb-6 space-y-2">
+    <li>
+      <strong>Plan.</strong> Triage → spec → plan, with you in the loop resolving the open questions. This is where your
+      judgment lives.
+    </li>
+    <li>
+      <strong>Implementation.</strong> The stateless loop grinds through the slices unattended. Because the plans are
+      file-level and independent, non-conflicting plans can run in <em>parallel</em>.
+    </li>
+    <li>
+      <strong>Polish.</strong> A final pass cleans up the seams — naming, dead code, anything the slice-by-slice march
+      left rough.
+    </li>
+    <li>
+      <strong>Review.</strong> You review the real PR, the same as any human's. This is the other edge — judgment at the
+      boundary, where the side effects live.
+    </li>
+  </ol>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The compounding harness</h2>
+
+  <p class="mb-6">
+    Your first autonomous runs will be mediocre, and it's worth being honest about why. They'll pass every check you
+    wrote and still be <em>off</em>. The agent reinvents a helper that already exists three files over. It over-builds —
+    a configurable factory where a function would do. It writes in a house style that isn't yours. The tests are green;
+    the taste is wrong.
+  </p>
+
+  <p class="mb-6">
+    The important thing is that these are <strong>blind spots, not random noise</strong>. They're systematic — the model
+    reliably doesn't know your conventions, because nobody wrote them down where it could see. (This jaggedness, where a
+    model is brilliant and oblivious in the same breath, is the subject of
+    <a class="text-primary hover:underline" href="/blog/jagged-intelligence">Jagged Intelligence</a> — the surface
+    you're working around.) A systematic gap is fixable in a way random noise never is: you can name it, and once named,
+    you can close it.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">The evolution meta-loop</h3>
+
+  <p class="mb-6">
+    So you build a second loop around the first one — a loop that improves the harness itself. After a run, you don't
+    just fix the output and move on. You feed the lesson back in:
+  </p>
+
+  <ol class="list-decimal list-inside mb-6 space-y-2">
+    <li><strong>Give feedback</strong> on what was off ("it built a helper that duplicates the existing one").</li>
+    <li>
+      <strong>Ask the model to extract the underlying rule</strong> — not the one-off fix, but the general principle
+      ("check for an existing utility before writing a new one").
+    </li>
+    <li>
+      <strong>Backtest the rule against the existing codebase.</strong> Does it actually hold? Search the repo: do
+      engineers really reuse utilities here, or is duplication common? If the rule holds, keep it. If it doesn't, refine
+      or reject it — a rule that contradicts the codebase will do more harm than the blind spot did.
+    </li>
+    <li>
+      <strong>Fold confirmed rules into the rules layer</strong> — <code>CLAUDE.md</code> and its friends — where every
+      future run will read them.
+    </li>
+  </ol>
+
+  <EvolutionLoop client:load />
+
+  <p class="mb-6">
+    The next run starts better, because it starts with the rule already in context. And it generates new, subtler blind
+    spots, which you extract, backtest, and fold in turn. The system <strong>compounds</strong>: each pass tightens the
+    harness, and the harness shapes the next pass. You're not just shipping features — you're teaching the machine your
+    codebase, permanently, one verified rule at a time.
+  </p>
+
+  <h3 class="text-2xl font-bold mt-10 mb-4">A closing caution: more output, more bugs</h3>
+
+  <p class="mb-6">
+    One honest note to end on. Even as your per-line accuracy climbs, your <em>absolute</em> bug count can rise — simply
+    because you're producing far more code. It's the taxi-driver problem: a careful driver who drives ten times as far
+    will, in raw numbers, have more incidents than a reckless one who barely leaves the driveway, even though they're
+    safer per mile. Throughput multiplies everything, including mistakes.
+  </p>
+
+  <p class="mb-6">
+    The answer isn't to slow down — it's to build the review and the rules layer to <em>match</em> the throughput. The
+    edges have to scale with the middle. A loud, fast middle with a thin review boundary just ships bugs faster. Invest
+    in the front (better specs) and the end (real review and a compounding rules layer) in proportion to how much you let
+    the middle run. Done right, that's the whole bet of autonomous agents: front-load the judgment, automate the doing,
+    and let the harness get smarter every time you use it.
+  </p>
+
+  <div class="mt-16 pt-8 border-t border-border">
+    <p class="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-3">Related</p>
+    <ul class="list-disc list-inside space-y-1 text-muted-foreground">
+      <li>
+        <a class="text-primary hover:underline" href="/blog/probability-space-engineering"
+          >Probability Space Engineering</a
+        > — why these moves work
+      </li>
+      <li>
+        <a class="text-primary hover:underline" href="/blog/jagged-intelligence">Jagged Intelligence</a> — the surface you're
+        working around
+      </li>
+      <li>
+        <a class="text-primary hover:underline" href="/blog/how-llms-work">How LLMs Actually Work</a> — the input/context
+        primer
+      </li>
+    </ul>
+  </div>
+</BlogPostLayout>

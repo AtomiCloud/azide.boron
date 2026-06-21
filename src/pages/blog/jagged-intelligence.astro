@@ -1,0 +1,175 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { getBlogPost } from '../../lib/blog-posts';
+import JaggedFrontier from '../../components/JaggedFrontier';
+
+export const frontmatter = {
+  title: 'Jagged Intelligence',
+  description:
+    'LLMs are superhuman at some tasks and trivially bad at others. The fix is not to make them act human — it is to engineer around the surface.',
+  author: 'Adelphi Liong',
+  date: '2026-06-21',
+  topic: 'tech' as const,
+  tags: ['llm', 'ai', 'mental-models'],
+  shareMessage: 'LLM capability is a jagged surface, not a ladder. Stop role-playing it human and engineer around it.',
+};
+
+const post = getBlogPost('jagged-intelligence')!;
+---
+
+<BlogPostLayout post={post}>
+  <p class="text-lg leading-relaxed mb-6">
+    <em
+      >The same model that drafts a working migration script in four seconds will then insist that "strawberry" has two
+      r's. It is smart and bad at the same time — superhuman at some things, then tripping over tasks a child would get
+      right. That contradiction is not a bug to wait out. It is the most important thing to understand about working with
+      these models, and it changes how you should hand them work.</em
+    >
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Smart and bad at the same time</h2>
+
+  <p class="mb-6">
+    Spend a week with a frontier model and you collect a strange list. It will translate a dense legal paragraph between
+    two languages better than most professionals. It will refactor a file, write the tests, and explain the trade-offs.
+    Then you ask it to count the letters in a word, or play a clean game of tic-tac-toe, or add a column of large
+    numbers, and it falls flat — confidently, with no hint that anything went wrong.
+  </p>
+
+  <p class="mb-6">
+    The instinct is to treat this as noise: the model is "having a bad day," or you phrased it wrong, or it will be fixed
+    in the next version. That framing keeps you from seeing the actual shape of the thing. The failures are not random
+    and they are not temporary glitches around a steadily-rising average. They are <strong>structural</strong>. The model
+    is genuinely excellent and genuinely incompetent across a single conversation, and which is which does not follow the
+    pattern you expect.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Karpathy's jagged frontier</h2>
+
+  <p class="mb-6">
+    <strong>Andrej Karpathy</strong> gave this its name: <strong>jagged intelligence</strong>. His observation is that a
+    model's capability is a <em>jagged frontier</em> — it pokes far above human ability in some directions while dipping
+    below trivial competence in others, all at the same level of "intelligence." There is no single dial labelled smart
+    that you can turn up and watch every skill rise together. Progress in one area tells you almost nothing about a
+    neighbouring one.
+  </p>
+
+  <blockquote class="border-l-4 border-primary pl-6 py-1 my-6 italic text-muted-foreground">
+    The model is not uniformly a bit smarter than last year. It is wildly uneven — and the unevenness is the point, not
+    an imperfection on the way to smoothness.
+  </blockquote>
+
+  <p class="mb-6">
+    Credit where it is due: the frontier framing is Karpathy's, and it is the right starting point. What follows is where
+    we take it — because once you accept the shape, the way you <em>use</em> these models has to change.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The wrong picture: the ladder</h2>
+
+  <p class="mb-6">
+    Most of us carry a default mental model of intelligence: a <strong>ladder</strong>. A single scalar. Novice at the
+    bottom, expert at the top, everyone else ranked somewhere in between. It is how we talk about people — junior, mid,
+    senior — and it quietly leaks into how we talk to models.
+  </p>
+
+  <p class="mb-6">
+    This is why so much prompting advice feels like it <em>should</em> work. "You are a senior staff engineer." "Respond
+    as Warren Buffett." "Treat it like a smart intern." Each of these is an attempt to place the model on the human
+    ladder — to slide it up a rung and collect the competence that comes with the higher position. The intuition is: if I
+    can convince it to be more senior, it will be more capable across the board, the way a senior human is.
+  </p>
+
+  <p class="mb-6">
+    But there is no board. The ladder assumes a single axis where moving up lifts everything. The model does not have one
+    axis. Telling it to "be a senior engineer" does not raise its arithmetic, its letter-counting, or its game-playing —
+    those live in completely different parts of the surface, untouched by the role you assigned. The role prompt can
+    change tone and framing; it cannot relocate a capability the model does not have to a rung where it does.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The right picture: a surface</h2>
+
+  <p class="mb-6">
+    The honest model is not a line but a <strong>surface</strong>. Capability varies across at least three things at
+    once: the <strong>model</strong> you are using, the <strong>input</strong> you give it, and the <strong>task</strong>
+    you are asking for. Hold a model fixed and the competence still rises and falls dramatically as you move across tasks
+    — and it does not track human intuition. The things that are hard for us (translation, recall across a huge document,
+    generating boilerplate) are often where it spikes. The things that are easy for us (counting, exact arithmetic,
+    keeping a simple game state straight) are often where it dips.
+  </p>
+
+  <JaggedFrontier client:load />
+
+  <p class="mb-6">
+    Look at the two pictures side by side. On the left, the ladder: tidy, ranked, one dimension, the thing our role
+    prompts are quietly aiming at. On the right, the truth: spikes that clear the human baseline and dips that fall to
+    nearly nothing, sitting right next to each other with no smooth path between them. You cannot summarise that right
+    panel with a single number, and you cannot improve it by asking it to stand on a higher rung.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The implication: engineer around the surface</h2>
+
+  <p class="mb-6">
+    Here is the part that matters, and the part that is ours rather than borrowed. If capability is jagged, you cannot
+    patch the dips by making the model act more human. Role-play does not move the surface. So stop trying. The job is not
+    to coax a person out of the model — it is to <strong>engineer around the surface you actually have</strong>.
+  </p>
+
+  <p class="mb-6">That reframes the whole problem into a division of labour. There are really three things to map:</p>
+
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li><strong>What you are good at</strong> — judgment, taste, knowing what "done" means, catching the failure the model cannot see.</li>
+    <li><strong>What the model is good at</strong> — the spikes: volume, recall, transformation, tireless drafting.</li>
+    <li><strong>What the model is bad at</strong> — the dips: the trivial-looking things it will confidently get wrong.</li>
+  </ul>
+
+  <p class="mb-6">
+    Once those are mapped, you divide the work along the contours. Give the model the spikes. Keep the judgment for
+    yourself. Build scaffolding — verification, tools, structure — to cover the dips so a known weakness never becomes a
+    silent failure. You are not arguing the surface into a better shape; you are routing work across it.
+  </p>
+
+  <p class="mb-6">
+    Two disciplines grow out of exactly this stance, and they are the subjects of the other posts.
+    <a class="text-primary hover:underline" href="/blog/autonomous-agents">Autonomous Agents</a> is the practice: how to
+    work the surface in the real world — making the goal a file, looping on it, and pushing your judgment to the edges so
+    the model can run autonomously through the middle.
+    <a class="text-primary hover:underline" href="/blog/probability-space-engineering">Probability Space Engineering</a>
+    is the theory: what the surface actually <em>is</em>, and how every prompt, tool, and bit of context reshapes it. One
+    works the surface; the other explains why working it that way succeeds.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Blind spots you can only find by watching</h2>
+
+  <p class="mb-6">
+    There is a sharper edge to all of this. The model is bad at <em>different</em> things than a human, and it is bad at
+    them <strong>unpredictably</strong>. A human junior fails in ways you can anticipate, because their weaknesses cluster
+    where yours once did. The model's blind spots do not. They sit in places that feel safe — short inputs, simple
+    arithmetic, a small puzzle — precisely where you would never think to check.
+  </p>
+
+  <p class="mb-6">
+    Which means you cannot learn the surface from documentation or from a benchmark score. You learn a given model's
+    blind spots the only way available: by <strong>watching it work</strong>, on your tasks, and noticing where it breaks.
+    That is also why neither blanket trust nor blanket distrust is rational. Trust everything and the silent dips burn
+    you. Distrust everything and you throw away the spikes that make the model worth using. The workable stance is the
+    engineered one — trust it where you have mapped a spike, verify it where you have mapped a dip, and keep updating the
+    map as you go.
+  </p>
+
+  <p class="mb-6">
+    If you only take one idea from this: <strong>intelligence here is not a height to climb, it is a shape to map.</strong>
+    Stop placing the model on the human ladder. Find its frontier, find yours, and divide the work where they meet. To
+    understand <em>why</em> these models behave this way at all, start with
+    <a class="text-primary hover:underline" href="/blog/how-llms-work">how LLMs actually work</a> — the mechanics under the
+    chat box.
+  </p>
+
+  <div class="mt-16 pt-8 border-t border-border">
+    <p class="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-3">Related</p>
+    <ul class="list-disc list-inside space-y-1 text-muted-foreground">
+      <li><a class="text-primary hover:underline" href="/blog/how-llms-work">How LLMs Actually Work</a> — the mechanics under the chat box</li>
+      <li><a class="text-primary hover:underline" href="/blog/autonomous-agents">Autonomous Agents</a> — working the surface in practice</li>
+      <li><a class="text-primary hover:underline" href="/blog/probability-space-engineering">Probability Space Engineering</a> — the theory of shaping outputs</li>
+    </ul>
+  </div>
+</BlogPostLayout>

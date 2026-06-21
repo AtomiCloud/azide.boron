@@ -1,0 +1,173 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { getBlogPost } from '../../lib/blog-posts';
+import CodeBlock from '../../components/CodeBlock.astro';
+import ChatVsApi from '../../components/ChatVsApi';
+import TokenBudget from '../../components/TokenBudget';
+
+export const frontmatter = {
+  title: 'How LLMs Actually Work',
+  description: 'The short, jargon-free primer to send anyone who does not get how LLMs work: it is input to output, not a conversation.',
+  author: 'Adelphi Liong',
+  date: '2026-06-21',
+  topic: 'tech' as const,
+  tags: ['llm', 'ai', 'explainer', 'context'],
+  shareMessage: 'Send this to anyone who does not get how LLMs work',
+};
+const post = getBlogPost('how-llms-work')!;
+---
+
+<BlogPostLayout post={post}>
+  <p class="text-lg leading-relaxed mb-6">
+    <em
+      >This is the post you send to someone who does not get how LLMs work — "read this and you will understand what is
+      actually happening under the hood." No maths, no jargon, about a five-minute read. If you have ever wondered how
+      the chatbot "remembers" what you said, this clears it up.</em
+    >
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">It is not a conversation</h2>
+  <p class="mb-6">
+    The first thing to unlearn is the word <em>chat</em>. It feels like you are talking to something. You are not. A
+    language model does exactly one thing: you hand it an <strong>input</strong> (a big blob of text), and it hands back
+    an <strong>output</strong> (more text). That is the whole machine. Input goes in, output comes out, and then it
+    forgets you exist.
+  </p>
+  <p class="mb-6">
+    So where does the "conversation" come from? The chat window is a <strong>view</strong> — a friendly picture painted
+    on top. Under the hood, there is no running session keeping track of you. Every single time you hit send, the app
+    quietly rebuilds the <em>entire</em> conversation from scratch — your first message, the model's first reply, your
+    second message, all of it — plus a hidden block of instructions you never see, and re-sends the whole thing as one
+    fresh input. The model reads it all, answers once, and forgets again.
+  </p>
+
+  <ChatVsApi client:load />
+
+  <p class="mb-6">
+    This is the single most useful thing to internalise: <strong>the model has no memory between calls.</strong> What
+    looks like memory is just the transcript being replayed to it every turn. It is less like a colleague who remembers
+    your last chat, and more like handing a brilliant stranger the full printout of your conversation so far and asking
+    "what is the next line?"
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Input = context + prompt</h2>
+  <p class="mb-6">
+    That big input blob has two parts worth naming, because people muddle them constantly.
+  </p>
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li><strong>The prompt</strong> is your latest ask — the thing you just typed. "Add an email column."</li>
+    <li>
+      <strong>The context</strong> is everything else that gets bundled in around it: the hidden system prompt, any files
+      or memory the tool pulls in (like a <code>CLAUDE.md</code>), results from tools the model ran, and every earlier
+      message in the thread.
+    </li>
+  </ul>
+  <p class="mb-6">
+    So your prompt is a small part of what the model actually reads. Most of the input is context you may not even be
+    aware of. When the answer surprises you, the prompt is usually fine — it is the <em>context</em> that was off.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">It all shares one budget</h2>
+  <p class="mb-6">
+    Here is the catch. All of that — system prompt, tools, files, memory, every past message — has to fit inside one
+    fixed space called the <strong>context window</strong>. Think of it as a single fixed-size box. Everything the model
+    is allowed to "see" on this turn has to fit in the box, and the box does not grow.
+  </p>
+  <p class="mb-6">
+    A real breakdown of that box looks roughly like this — the hidden instructions, the tool definitions, connected
+    services, your memory files, and the actual conversation all carve out a slice before you have said a word:
+  </p>
+
+  <TokenBudget client:load />
+
+  <p class="mb-6">
+    The practical consequence: <strong>context is finite and contested, not free.</strong> Every file you ask the model
+    to read, every tool call it makes, every long pasted log — all of it spends from the same budget. Fill the box with
+    junk and there is less room for the model to actually think. This is why "just give it more context" is not the free
+    win it sounds like.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Three inputs people mash together</h2>
+  <p class="mb-6">
+    When you give an LLM work, you are really handing it three different kinds of information. They shape the result in
+    different ways, and mixing them up is one of the most common mistakes:
+  </p>
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>
+      <strong>Rules</strong> — the non-task-specific "how we work here" stuff. A <code>CLAUDE.md</code>, a style guide,
+      conventions. This is stable; it should be true on every task.
+    </li>
+    <li>
+      <strong>Code / world state</strong> — the repo, the data, the system exactly as it is right now. This changes
+      constantly and is specific to this moment.
+    </li>
+    <li>
+      <strong>The goal</strong> — what "done" means <em>this time</em>. The actual ask. This changes every task.
+    </li>
+  </ul>
+
+  <CodeBlock
+    lang="text"
+    code={`RULES         "Use snake_case. Write a migration for every schema change."   (always true)
+WORLD STATE   the users table, as it exists in the repo right now              (true now)
+GOAL          "Add an email column to that table."                            (true this task)`}
+  />
+
+  <p class="mb-6">
+    Keep these straight and the model behaves. Blur them — bake a one-off goal into your permanent rules, or treat
+    today's stale code dump as if it were the current state — and you get confident, wrong answers. A rule belongs in the
+    rules; a goal belongs in the prompt; the world state should reflect reality, not last week's.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">Why any of this matters</h2>
+  <p class="mb-6">
+    Once you see the model as input → output sharing one budget, the advice writes itself: <strong
+      >what you put in is what shapes what comes out</strong
+    >, and irrelevant or stale context actively degrades the result. More is not better. Two failure modes are worth
+    knowing by name:
+  </p>
+  <ul class="list-disc list-inside mb-6 space-y-2">
+    <li>
+      <strong>Context rot</strong> — a rule you set early gets buried under dozens of later turns, and the model
+      effectively forgets it. It was true at the top of the box; now it is drowned out.
+    </li>
+    <li>
+      <strong>Context pollution</strong> — semi-related material you dragged in (an old thread, a half-relevant file)
+      quietly bends the answer toward the wrong thing.
+    </li>
+  </ul>
+  <p class="mb-6">
+    That is the practical picture, and it is enough to use these tools well. If you want the deeper "why" — how the input
+    actually shapes the space of possible outputs — that is the subject of <a
+      class="text-primary hover:underline"
+      href="/blog/probability-space-engineering">Probability Space Engineering</a
+    >. And if you have noticed the model is brilliant one moment and baffled by something trivial the next, that is its
+    own thing, covered in <a class="text-primary hover:underline" href="/blog/jagged-intelligence">Jagged Intelligence</a
+    >.
+  </p>
+
+  <h2 class="text-3xl font-bold mt-16 mb-6">The whole thing in one breath</h2>
+  <p class="mb-6">
+    An LLM takes one text input and returns one text output, with no memory in between. The chat is just a view; every
+    turn the whole transcript plus hidden instructions is re-sent from scratch. That input is <em>context + prompt</em>,
+    and it all has to fit in one fixed budget — so what you choose to include, and what you leave out, is most of the
+    skill. That is genuinely most of how this works under the hood.
+  </p>
+
+  <div class="mt-16 pt-8 border-t border-border">
+    <p class="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-3">Related</p>
+    <ul class="list-disc list-inside space-y-1 text-muted-foreground">
+      <li>
+        <a class="text-primary hover:underline" href="/blog/jagged-intelligence">Jagged Intelligence</a> — why LLMs are
+        smart and bad at once
+      </li>
+      <li>
+        <a class="text-primary hover:underline" href="/blog/probability-space-engineering">Probability Space Engineering</a
+        > — the deeper model of how outputs are shaped
+      </li>
+      <li>
+        <a class="text-primary hover:underline" href="/blog/autonomous-agents">Autonomous Agents</a> — putting it to work
+      </li>
+    </ul>
+  </div>
+</BlogPostLayout>
