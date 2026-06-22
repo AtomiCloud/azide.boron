@@ -1,224 +1,224 @@
 import React from 'react';
 
-// Wrong model (left): intelligence as a single ladder — humans neatly ranked by
-// one scalar "smartness". Right model (right): capability as a jagged frontier —
-// superhuman spikes next to near-zero dips, with no human-intuitive ordering.
+// Faithful to the talk's illustrations:
+//  - LEFT  (the model we imagine): a ladder with a stick figure climbing it,
+//    rungs from "beginner" up to "genius", an arrow labelled "smarter".
+//  - RIGHT (what it's actually like): a smooth blue "human" circle with a
+//    jagged orange "LLM" star — spikes that punch past the human baseline
+//    (superhuman) sitting right next to dips that fall inside it (blind spots).
 
-interface Rung {
-  label: string;
-  // 0 (bottom) .. 1 (top) position on the ladder
-  level: number;
+const rungs = ['genius', 'principal', 'staff', 'senior', 'mid', 'junior', 'beginner'];
+
+// Jagged spike lengths as a fraction of the human-circle radius.
+// >1 pokes past the circle (superhuman); <1 recedes inside it (a blind spot).
+const spikes = [1.5, 0.42, 1.18, 0.6, 1.46, 0.38, 1.0, 0.66, 1.34, 0.5, 1.12];
+
+function starPath(cx: number, cy: number, R: number, inner: number): string {
+  const n = spikes.length;
+  const pts: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const r = R * spikes[i]!;
+    pts.push(`${(cx + Math.cos(a) * r).toFixed(1)},${(cy + Math.sin(a) * r).toFixed(1)}`);
+    const a2 = a + Math.PI / n;
+    pts.push(`${(cx + Math.cos(a2) * inner).toFixed(1)},${(cy + Math.sin(a2) * inner).toFixed(1)}`);
+  }
+  return `M ${pts.join(' L ')} Z`;
 }
-
-const ladder: Rung[] = [
-  { label: 'Expert', level: 0.92 },
-  { label: 'Senior', level: 0.72 },
-  { label: 'Mid', level: 0.52 },
-  { label: 'Junior', level: 0.32 },
-  { label: 'Novice', level: 0.12 },
-];
-
-interface Task {
-  label: string;
-  // 0 (near-useless) .. 1 (superhuman) capability on this specific task
-  capability: number;
-}
-
-// A deliberately jagged profile: high spikes (translation, boilerplate),
-// then trivial-looking dips (counting letters, simple arithmetic at scale).
-const tasks: Task[] = [
-  { label: 'Translate', capability: 0.96 },
-  { label: 'Summarize', capability: 0.82 },
-  { label: 'Count letters', capability: 0.14 },
-  { label: 'Boilerplate', capability: 0.9 },
-  { label: 'Big-num math', capability: 0.22 },
-  { label: 'Draft prose', capability: 0.85 },
-  { label: 'Tic-tac-toe', capability: 0.18 },
-  { label: 'Code review', capability: 0.7 },
-];
 
 export default function JaggedFrontier() {
-  // Right-panel chart geometry (SVG user units).
-  const W = 320;
-  const H = 200;
-  const padL = 28;
-  const padR = 12;
-  const padT = 16;
-  const padB = 28;
-  const plotW = W - padL - padR;
-  const plotH = H - padT - padB;
-
-  const barGap = 8;
-  const barW = (plotW - barGap * (tasks.length - 1)) / tasks.length;
-
-  // "Human baseline" reference line — capability above it is superhuman.
-  const baseline = 0.55;
-  const baselineY = padT + plotH * (1 - baseline);
-
-  // Polyline tracing the jagged frontier across bar tops.
-  const frontier = tasks
-    .map((t, i) => {
-      const x = padL + i * (barW + barGap) + barW / 2;
-      const y = padT + plotH * (1 - t.capability);
-      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    })
-    .join(' ');
+  // RIGHT-panel geometry
+  const cx = 116;
+  const cy = 120;
+  const R = 58; // human-circle radius (the "baseline")
+  // a long spike (index 0, straight up) → superhuman; a short one (index 5) → blind spot
+  const supA = (0 / spikes.length) * Math.PI * 2 - Math.PI / 2;
+  const supR = R * spikes[0]!;
+  const supX = cx + Math.cos(supA) * supR;
+  const supY = cy + Math.sin(supA) * supR;
+  const dipA = (5 / spikes.length) * Math.PI * 2 - Math.PI / 2;
+  const dipR = R * spikes[5]!;
+  const dipX = cx + Math.cos(dipA) * dipR;
+  const dipY = cy + Math.sin(dipA) * dipR;
 
   return (
     <div className="my-8 md:my-12">
       <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 md:p-6 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-          {/* ===================== LEFT: the ladder (wrong model) ===================== */}
+          {/* ===================== LEFT: the ladder ===================== */}
           <div>
             <div className="mb-3 text-center">
               <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                The wrong model
+                The model we imagine
               </span>
             </div>
-
-            <div className="flex flex-col gap-2">
-              {ladder.map(rung => (
-                <div
-                  key={rung.label}
-                  className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60"
-                  style={{ marginLeft: `${(1 - rung.level) * 24}px` }}
-                >
-                  <span
-                    className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ background: '#64748b', opacity: 0.4 + rung.level * 0.6 }}
-                    aria-hidden="true"
-                  />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{rung.label}</span>
-                  <span className="ml-auto font-mono text-[11px] text-slate-400 dark:text-slate-500">
-                    rung {ladder.length - ladder.indexOf(rung)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <p className="mt-4 text-center text-xs italic text-slate-500 dark:text-slate-400">
-              One scalar. More-or-less smart. Climb the ladder.
-            </p>
-          </div>
-
-          {/* ===================== RIGHT: the jagged frontier (right model) ===================== */}
-          <div>
-            <div className="mb-3 text-center">
-              <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
-                The right model
-              </span>
-            </div>
-
             <svg
-              className="w-full h-auto"
-              viewBox={`0 0 ${W} ${H}`}
-              preserveAspectRatio="xMidYMid meet"
+              className="w-full h-auto max-w-[260px] mx-auto block"
+              viewBox="0 0 200 260"
               role="img"
-              aria-label="A jagged capability chart across eight tasks. Some bars rise well above a human-baseline line (superhuman: translate, boilerplate, draft prose) while others collapse near zero (count letters, big-number math, tic-tac-toe), with no smooth ordering."
+              aria-label="A ladder with a stick figure on a low rung. Rungs are labelled from beginner at the bottom to genius at the top, with an arrow up the side labelled smarter."
             >
-              {/* Y axis ticks */}
-              {[0, 0.5, 1].map(t => {
-                const y = padT + plotH * (1 - t);
-                return (
-                  <g key={t}>
-                    <line
-                      x1={padL}
-                      y1={y}
-                      x2={W - padR}
-                      y2={y}
-                      stroke="#cbd5e1"
-                      strokeOpacity={0.4}
-                      strokeWidth={0.5}
-                      strokeDasharray="2 3"
-                    />
-                  </g>
-                );
-              })}
-
-              {/* Human baseline */}
+              {/* smarter arrow */}
+              <defs>
+                <marker id="jf-up" markerWidth="7" markerHeight="7" refX="3.5" refY="5" orient="auto">
+                  <polygon points="0 5, 3.5 0, 7 5" className="fill-slate-400 dark:fill-slate-500" />
+                </marker>
+              </defs>
               <line
-                x1={padL}
-                y1={baselineY}
-                x2={W - padR}
-                y2={baselineY}
-                stroke="#94a3b8"
-                strokeWidth={1}
-                strokeDasharray="4 3"
+                x1="34"
+                y1="238"
+                x2="34"
+                y2="32"
+                className="stroke-slate-400 dark:stroke-slate-500"
+                strokeWidth="1.25"
+                markerEnd="url(#jf-up)"
               />
               <text
-                x={W - padR}
-                y={baselineY - 4}
-                textAnchor="end"
-                fontSize={8}
-                className="fill-slate-500 dark:fill-slate-400"
+                x="22"
+                y="135"
+                fontSize="9"
+                transform="rotate(-90 22 135)"
+                textAnchor="middle"
+                className="fill-slate-400 dark:fill-slate-500"
               >
-                human baseline
+                smarter
               </text>
 
-              {/* Bars */}
-              {tasks.map((t, i) => {
-                const x = padL + i * (barW + barGap);
-                const y = padT + plotH * (1 - t.capability);
-                const h = padT + plotH - y;
-                const superhuman = t.capability >= baseline;
+              {/* rails */}
+              <line
+                x1="66"
+                y1="24"
+                x2="66"
+                y2="246"
+                className="stroke-slate-500 dark:stroke-slate-300"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <line
+                x1="120"
+                y1="24"
+                x2="120"
+                y2="246"
+                className="stroke-slate-500 dark:stroke-slate-300"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+
+              {/* rungs + labels */}
+              {rungs.map((label, i) => {
+                const y = 40 + i * 32;
                 return (
-                  <g key={t.label}>
-                    <rect
-                      x={x}
-                      y={y}
-                      width={barW}
-                      height={h}
-                      rx={2}
-                      fill={superhuman ? '#6366f1' : '#f43f5e'}
-                      fillOpacity={0.85}
+                  <g key={label}>
+                    <line
+                      x1="66"
+                      y1={y}
+                      x2="120"
+                      y2={y}
+                      className="stroke-slate-400 dark:stroke-slate-500"
+                      strokeWidth="1.5"
                     />
-                    <text
-                      x={x + barW / 2}
-                      y={H - padB + 9}
-                      textAnchor="end"
-                      fontSize={6.5}
-                      transform={`rotate(-32 ${x + barW / 2} ${H - padB + 9})`}
-                      className="fill-slate-500 dark:fill-slate-400"
-                    >
-                      {t.label}
+                    <text x="128" y={y + 3} fontSize="9.5" className="fill-slate-600 dark:fill-slate-300">
+                      {label}
                     </text>
                   </g>
                 );
               })}
 
-              {/* The jagged frontier line over the bars */}
-              <path
-                d={frontier}
-                fill="none"
-                stroke="#0f172a"
-                strokeOpacity={0.55}
-                strokeWidth={1.25}
-                className="dark:stroke-white"
-              />
-              {tasks.map((t, i) => {
-                const x = padL + i * (barW + barGap) + barW / 2;
-                const y = padT + plotH * (1 - t.capability);
-                return <circle key={t.label} cx={x} cy={y} r={1.8} fill="#0f172a" className="dark:fill-white" />;
-              })}
+              {/* stick figure standing near the 'junior' rung (y = 40 + 5*32 = 200) */}
+              <g className="stroke-orange-500" strokeWidth="2" strokeLinecap="round" fill="none">
+                <circle cx="93" cy="180" r="5" className="fill-orange-500 stroke-orange-500" />
+                <line x1="93" y1="185" x2="93" y2="198" />
+                <line x1="93" y1="189" x2="85" y2="195" />
+                <line x1="93" y1="189" x2="101" y2="195" />
+                <line x1="93" y1="198" x2="87" y2="200" />
+                <line x1="93" y1="198" x2="99" y2="200" />
+              </g>
             </svg>
+            <p className="mt-4 text-center text-xs italic text-slate-500 dark:text-slate-400">
+              One scalar. Climb the rungs.
+            </p>
+          </div>
 
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-[11px]">
-              <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-indigo-500" /> superhuman
-              </span>
-              <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-rose-500" /> trivially bad
+          {/* ===================== RIGHT: the jagged star vs the human circle ===================== */}
+          <div>
+            <div className="mb-3 text-center">
+              <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
+                What it's actually like
               </span>
             </div>
+            <svg
+              className="w-full h-auto max-w-[280px] mx-auto block"
+              viewBox="0 0 232 240"
+              role="img"
+              aria-label="A smooth blue circle labelled human capability, overlaid with a jagged orange star labelled LLM capability. Some star points punch out past the circle (superhuman) while others fall well inside it (blind spots)."
+            >
+              {/* human capability — the smooth baseline circle */}
+              <circle cx={cx} cy={cy} r={R} fill="#60a5fa" fillOpacity="0.18" stroke="#3b82f6" strokeWidth="1.5" />
+              {/* LLM capability — the jagged star */}
+              <path
+                d={starPath(cx, cy, R, 18)}
+                fill="#f97316"
+                fillOpacity="0.7"
+                stroke="#ea580c"
+                strokeWidth="1"
+                strokeLinejoin="round"
+              />
 
-            <p className="mt-3 text-center text-xs italic text-slate-500 dark:text-slate-400">
-              Capability varies per task. Spikes and dips, no smooth ladder.
+              {/* annotations */}
+              <line
+                x1={supX}
+                y1={supY}
+                x2={supX + 22}
+                y2={supY - 6}
+                className="stroke-slate-400 dark:stroke-slate-500"
+                strokeWidth="0.75"
+              />
+              <text
+                x={supX + 24}
+                y={supY - 7}
+                fontSize="8.5"
+                fontWeight="600"
+                className="fill-orange-600 dark:fill-orange-400"
+              >
+                superhuman
+              </text>
+              <line
+                x1={dipX}
+                y1={dipY}
+                x2={dipX - 18}
+                y2={dipY + 10}
+                className="stroke-slate-400 dark:stroke-slate-500"
+                strokeWidth="0.75"
+              />
+              <text
+                x={dipX - 20}
+                y={dipY + 13}
+                fontSize="8.5"
+                fontWeight="600"
+                textAnchor="end"
+                className="fill-slate-500 dark:fill-slate-400"
+              >
+                blind spot
+              </text>
+
+              {/* legend */}
+              <circle cx="14" cy="224" r="5" fill="#60a5fa" fillOpacity="0.4" stroke="#3b82f6" strokeWidth="1" />
+              <text x="23" y="227" fontSize="8.5" className="fill-slate-500 dark:fill-slate-400">
+                human
+              </text>
+              <path d={starPath(120, 224, 6, 2)} fill="#f97316" fillOpacity="0.8" />
+              <text x="130" y="227" fontSize="8.5" className="fill-slate-500 dark:fill-slate-400">
+                LLM
+              </text>
+            </svg>
+            <p className="mt-4 text-center text-xs italic text-slate-500 dark:text-slate-400">
+              Strengths and weaknesses don't follow human intuition.
             </p>
           </div>
         </div>
 
-        <p className="mt-5 text-center text-sm font-semibold text-slate-700 dark:text-slate-200">
-          Intelligence isn't a height to climb — it's a jagged surface to map.
+        <p className="mt-6 text-center text-base md:text-lg font-bold text-slate-700 dark:text-slate-200">
+          Intelligence isn't a height to climb — it's a jagged shape to map.
         </p>
       </div>
     </div>
